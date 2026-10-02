@@ -32,7 +32,15 @@ const groups = [
                   aria-hidden="true"
                   class="absolute top-1 -left-[5.5px] size-2.5 bg-brand-600 shadow-[3px_3px_0_var(--color-lift)]"
                 />
-                <p class="font-mono text-xs text-accent">{formatPeriod(entry.start, entry.end, lang)}</p>
+                <!-- Several periods: one per line on mobile, one line with separators from sm up. -->
+                <p class="flex flex-col font-mono text-xs text-accent sm:flex-row sm:flex-wrap sm:gap-x-2">
+                  {entry.periods.map((period, i) => (
+                    <span>
+                      {i > 0 && <span class="hidden sm:inline">· </span>}
+                      {formatPeriod(period.start, period.end, lang)}
+                    </span>
+                  ))}
+                </p>
                 <h4 class="mt-1.5 font-medium">{l(entry.title, lang)}</h4>
                 <p class="text-sm text-muted">
                   {entry.org} · {entry.location}
