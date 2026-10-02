@@ -197,6 +197,8 @@
     background: linear-gradient(90deg, var(--color-brand-600), var(--color-brand-400));
     /* Segmented, like the background squares. */
     mask: repeating-linear-gradient(90deg, #000 0 14px, transparent 14px 16px);
+    /* Empty unless the timeline is active: a page too short to scroll shows no bar. */
+    clip-path: inset(0 100% 0 0);
     /* Longhands on purpose: the minifier folds a timeline into the `animation` shorthand, which browsers reject. */
     animation-name: scroll-progress;
     animation-timing-function: linear;
@@ -211,6 +213,31 @@
   }
   to {
     clip-path: inset(0 0 0 0);
+  }
+}
+
+/*
+ * Content that slides in as it scrolls into view (CSS view timelines, no JS).
+ * Animates transform/opacity only, so it never conflicts with `lift` (which uses `translate`).
+ * Longhands on purpose, see .scroll-progress.
+ */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal-on-scroll {
+      animation-name: reveal-on-scroll;
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range-start: entry 0%;
+      animation-range-end: entry 70%;
+    }
+  }
+}
+
+@keyframes reveal-on-scroll {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
   }
 }
 

@@ -58,7 +58,8 @@ const links = [
 
 <script>
   const root = document.documentElement;
-  document.querySelector("[data-theme-toggle]")?.addEventListener("click", () => {
+  const toggle = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
+  toggle?.addEventListener("click", () => {
     const isDark = root.dataset.theme
       ? root.dataset.theme === "dark"
       : matchMedia("(prefers-color-scheme: dark)").matches;
@@ -67,5 +68,10 @@ const links = [
     try {
       localStorage.setItem("theme", next);
     } catch {}
+    // Ripple the new theme out from the button (see TechBackground.astro).
+    const rect = toggle.getBoundingClientRect();
+    document.dispatchEvent(
+      new CustomEvent("tech-wave", { detail: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } }),
+    );
   });
 </script>

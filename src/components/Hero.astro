@@ -1,5 +1,6 @@
 ---
 import ContributionGraph from "./ContributionGraph.astro";
+import DecodeText from "./DecodeText.astro";
 import Icon from "./Icon.astro";
 import RaisedTile from "./RaisedTile.astro";
 import { site } from "../site.config";
@@ -27,8 +28,12 @@ const cvIsFallback = !site.cv[lang];
       </span>
       {l(site.availability, lang)}
     </p>
-    <h1 class="reveal mt-6 text-4xl leading-[1.05] font-semibold tracking-tighter md:text-6xl" style="--i: 1">
-      {site.name}
+    <h1
+      aria-label={site.name}
+      class="reveal mt-6 text-4xl leading-[1.05] font-semibold tracking-tighter md:text-6xl"
+      style="--i: 1"
+    >
+      <DecodeText text={site.name} />
     </h1>
     <p class="reveal mt-5 max-w-[50ch] text-lg leading-relaxed text-muted" style="--i: 2">
       {l(site.tagline, lang)}

@@ -31,11 +31,11 @@ const languages = await Promise.all(
   }),
 );
 
-const panel = "rounded-xl p-6 ring-1 backdrop-blur-sm";
+const panel = "reveal-on-scroll rounded-xl p-6 ring-1 backdrop-blur-sm";
 ---
 
 <section id="skills" class="scroll-mt-20 border-t border-line py-20 md:py-28">
-  <SectionTitle>{t("nav.skills")}</SectionTitle>
+  <SectionTitle title={t("nav.skills")} />
 
   <div class="mt-10 grid gap-4 md:grid-cols-2">
     {

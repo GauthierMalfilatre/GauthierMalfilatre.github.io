@@ -17,7 +17,7 @@ const groups = [
 ---
 
 <section id="journey" class="scroll-mt-20 border-t border-line py-20 md:py-28">
-  <SectionTitle>{t("nav.journey")}</SectionTitle>
+  <SectionTitle title={t("nav.journey")} />
 
   <div class="mt-12 grid gap-14 lg:grid-cols-2 lg:gap-12">
     {
@@ -27,7 +27,7 @@ const groups = [
           <!-- Timeline: a purple rail with a square node per entry. -->
           <ol class="mt-6 border-l border-brand-600/30">
             {group.entries.map((entry) => (
-              <li class="relative pb-10 pl-7 last:pb-0">
+              <li class="reveal-on-scroll relative pb-10 pl-7 last:pb-0">
                 <span
                   aria-hidden="true"
                   class="absolute top-1 -left-[5.5px] size-2.5 bg-brand-600 shadow-[3px_3px_0_var(--color-lift)]"

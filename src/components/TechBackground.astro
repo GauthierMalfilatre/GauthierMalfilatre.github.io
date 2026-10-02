@@ -1,6 +1,8 @@
 ---
 // Background "tech wave": every few seconds a wave starts in the top-left corner and
 // lifts the grid squares it passes, then they dissolve back into the background.
+// A click on the background starts a wave from that point, and any script can start one
+// with document.dispatchEvent(new CustomEvent("tech-wave", { detail: { x, y } })).
 // Idle between waves (no animation frames); off when the tab is hidden or the
 // visitor prefers reduced motion. Colors come from the --fx-* variables in global.css.
 ---
@@ -16,8 +18,17 @@
   const RAGGED = 120; // random per-square delay, px: makes the wave front irregular
   const LIFT = 5; // max lift, px
   const FIRST_DELAY = 1200; // ms after load or tab focus
-  const MIN_DELAY = 7000; // ms between waves
+  const MIN_DELAY = 7000; // ms between automatic waves
   const MAX_DELAY = 12000;
+  const MAX_WAVES = 4; // concurrent waves, so click spam stays cheap
+
+  interface Wave {
+    x: number;
+    y: number;
+    start: number;
+    /** Distance to the farthest corner: the wave is over once its tail passes it. */
+    reach: number;
+  }
 
   function init(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
     const motion = matchMedia("(prefers-reduced-motion: reduce)");
@@ -28,7 +39,7 @@
     let delays = new Float32Array(0); // per square, 0..1
     let glints = new Float32Array(0); // per square, 0..1, mostly low: a few squares flash brighter
     let colors = readColors();
-    let start = 0;
+    let waves: Wave[] = [];
     let frame = 0;
     let timer = 0;
 
@@ -56,28 +67,38 @@
       glints = Float32Array.from({ length: cols * rows }, () => Math.random() ** 4);
     }
 
-    function draw(now: number) {
-      const front = ((now - start) / 1000) * SPEED;
-      const size = CELL - GAP;
-      ctx.clearRect(0, 0, width, height);
+    const travelled = (wave: Wave, now: number) => ((now - wave.start) / 1000) * SPEED;
 
+    function draw(now: number) {
+      waves = waves.filter((wave) => travelled(wave, now) - RAGGED - BAND < wave.reach);
+      ctx.clearRect(0, 0, width, height);
+      if (!waves.length) {
+        frame = 0;
+        return;
+      }
+
+      const fronts = waves.map((wave) => travelled(wave, now));
+      const size = CELL - GAP;
       for (let row = 0; row < rows; row++) {
         const y = row * CELL;
-        if (y > front) break;
         for (let col = 0; col < cols; col++) {
           const x = col * CELL;
-          if (x > front) break;
           const i = row * cols + col;
-          // 0 when the wave reaches the square, 1 when it has passed.
-          const p = (front - Math.hypot(x, y) - delays[i] * RAGGED) / BAND;
-          if (p <= 0 || p >= 1) continue;
-          // Sharp rise, slow fade.
-          const k = p < 0.15 ? p / 0.15 : (1 - (p - 0.15) / 0.85) ** 2;
+          // Strongest of the waves crossing this square.
+          let k = 0;
+          for (let w = 0; w < waves.length; w++) {
+            const distance = Math.hypot(x + CELL / 2 - waves[w].x, y + CELL / 2 - waves[w].y);
+            // 0 when the wave reaches the square, 1 when it has passed.
+            const p = (fronts[w] - distance - delays[i] * RAGGED) / BAND;
+            // Sharp rise, slow fade.
+            if (p > 0 && p < 1) k = Math.max(k, p < 0.15 ? p / 0.15 : (1 - (p - 0.15) / 0.85) ** 2);
+          }
+          if (k === 0) continue;
+
           const alpha = k * colors.strength;
           const lift = k * LIFT;
           const left = x + GAP / 2;
           const top = y + GAP / 2;
-
           // Shadow where the square sat, face lifted up-left: reads as a raised tile.
           ctx.globalAlpha = alpha * 0.9;
           ctx.fillStyle = colors.side;
@@ -91,30 +112,40 @@
         }
       }
       ctx.globalAlpha = 1;
-
-      if (front - RAGGED - BAND < Math.hypot(width, height)) {
-        frame = requestAnimationFrame(draw);
-      } else {
-        ctx.clearRect(0, 0, width, height);
-        schedule(MIN_DELAY + Math.random() * (MAX_DELAY - MIN_DELAY));
-      }
+      frame = requestAnimationFrame(draw);
     }
 
-    function wave() {
+    function spawn(x: number, y: number) {
       if (motion.matches || document.hidden) return;
       colors = readColors(); // the theme may have changed since the last wave
-      start = performance.now();
-      frame = requestAnimationFrame(draw);
+      const reach = Math.max(
+        Math.hypot(x, y),
+        Math.hypot(width - x, y),
+        Math.hypot(x, height - y),
+        Math.hypot(width - x, height - y),
+      );
+      waves.push({ x, y, start: performance.now(), reach });
+      if (waves.length > MAX_WAVES) waves.shift();
+      if (!frame) frame = requestAnimationFrame(draw);
+    }
+
+    function autoWave() {
+      if (motion.matches || document.hidden) return;
+      spawn(0, 0);
+      const duration = ((Math.hypot(width, height) + RAGGED + BAND) / SPEED) * 1000;
+      schedule(duration + MIN_DELAY + Math.random() * (MAX_DELAY - MIN_DELAY));
     }
 
     function schedule(delay: number) {
       clearTimeout(timer);
-      timer = window.setTimeout(wave, delay);
+      timer = window.setTimeout(autoWave, delay);
     }
 
     function stop() {
       cancelAnimationFrame(frame);
+      frame = 0;
       clearTimeout(timer);
+      waves = [];
       ctx.clearRect(0, 0, width, height);
     }
 
@@ -125,6 +156,18 @@
     });
     document.addEventListener("visibilitychange", () => (document.hidden ? stop() : schedule(FIRST_DELAY)));
     motion.addEventListener("change", () => (motion.matches ? stop() : schedule(FIRST_DELAY)));
+
+    // A click on the page background (not on a link, button or field) starts a wave there.
+    document.addEventListener("click", (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest("a, button, input, textarea, select, label, summary, [role='button']")) return;
+      if (getSelection()?.toString()) return; // the end of a text selection, not a click
+      spawn(event.clientX, event.clientY);
+    });
+    document.addEventListener("tech-wave", (event) => {
+      const { x, y } = (event as CustomEvent<{ x: number; y: number }>).detail;
+      spawn(x, y);
+    });
 
     resize();
     schedule(FIRST_DELAY);

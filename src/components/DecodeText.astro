@@ -1,0 +1,58 @@
+---
+// Text that "decodes" from random hex characters the first time it scrolls into view.
+// The visible text is scrambled while it runs, so the parent heading should carry the
+// real text in aria-label. Without JS, or with reduced motion, it is plain text.
+interface Props {
+  text: string;
+}
+const { text } = Astro.props;
+---
+
+<span data-decode>{text}</span>
+
+<script>
+  const GLYPHS = "0123456789abcdef";
+  const STEP = 45; // ms between glyph changes
+
+  function decode(el: HTMLElement) {
+    const chars = [...(el.textContent ?? "")];
+    const duration = 400 + chars.length * 30;
+    const start = performance.now();
+    // Lock the width so the scrambled glyphs never shift the layout.
+    el.style.cssText = `display:inline-block;width:${el.getBoundingClientRect().width}px;white-space:nowrap`;
+    let lastStep = -1;
+
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const step = Math.floor((now - start) / STEP);
+      if (t === 1) {
+        el.textContent = chars.join("");
+        el.style.cssText = "";
+        return;
+      }
+      if (step !== lastStep) {
+        lastStep = step;
+        const revealed = Math.floor(t * chars.length); // resolves left to right
+        el.textContent = chars
+          .map((ch, i) => (i < revealed || /\s/.test(ch) ? ch : GLYPHS[(Math.random() * GLYPHS.length) | 0]))
+          .join("");
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          observer.unobserve(entry.target);
+          decode(entry.target as HTMLElement);
+        }
+      },
+      { threshold: 0.6 },
+    );
+    document.querySelectorAll<HTMLElement>("[data-decode]").forEach((el) => observer.observe(el));
+  }
+</script>

@@ -15,7 +15,7 @@ const games = await getGames(site.steam.profile);
 ---
 
 <section id="games" class="scroll-mt-20 border-t border-line py-20 md:py-28">
-  <SectionTitle>{t("games.title")}</SectionTitle>
+  <SectionTitle title={t("games.title")} />
   <p class="mt-6 max-w-[60ch] text-lg leading-relaxed text-muted">{t("games.intro")}</p>
   {
     site.steam.profile && (
@@ -31,7 +31,7 @@ const games = await getGames(site.steam.profile);
 
   <!-- Mobile: horizontal scroll. Desktop: one row of equal columns. -->
   <ul
-    class="-mx-4 mt-10 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-4 [scrollbar-width:thin] md:mx-0 md:grid md:grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] md:overflow-visible md:px-0 md:pb-0"
+    class="reveal-on-scroll -mx-4 mt-10 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-4 [scrollbar-width:thin] md:mx-0 md:grid md:grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] md:overflow-visible md:px-0 md:pb-0"
   >
     {
       games.map((game) => {

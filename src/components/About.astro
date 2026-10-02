@@ -14,7 +14,7 @@ const { Content } = entry ? await render(entry) : { Content: null };
 ---
 
 <section id="about" class="scroll-mt-20 border-t border-line py-20 md:py-28">
-  <SectionTitle>{t("nav.about")}</SectionTitle>
+  <SectionTitle title={t("nav.about")} />
   <div
     class="mt-8 max-w-[65ch] space-y-5 text-lg leading-relaxed text-muted [&>p:first-child]:text-fg [&_strong]:text-fg"
   >

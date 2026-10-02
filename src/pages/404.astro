@@ -1,27 +1,43 @@
 ---
+// 404 as a segfault: the requested path is filled in by a tiny script (the page is static).
 import Base from "../layouts/Base.astro";
+import DecodeText from "../components/DecodeText.astro";
+import RaisedTile from "../components/RaisedTile.astro";
 import { site } from "../site.config";
+
+const title = "Segmentation fault";
 ---
 
 <Base lang="fr" title={`Page introuvable | ${site.name}`} alternates={false}>
-  <main class="mx-auto flex min-h-dvh max-w-5xl flex-col justify-center px-4 md:px-8">
-    <p class="font-mono text-sm text-accent">404</p>
-    <h1 class="mt-3 text-4xl font-semibold tracking-tighter md:text-6xl">Page introuvable</h1>
-    <p class="mt-3 text-lg text-muted" lang="en">Page not found</p>
-    <div class="mt-8 flex flex-wrap gap-3">
-      <a
-        href="/"
-        class="btn-primary"
-      >
-        Retour à l’accueil
-      </a>
-      <a
-        href="/en/"
-        lang="en"
-        class="btn-secondary"
-      >
-        English version
-      </a>
+  <main class="mx-auto flex min-h-dvh max-w-5xl flex-col justify-center px-4 py-16 md:px-8">
+    <p class="font-mono text-sm text-accent">SIGSEGV · 404</p>
+    <h1 aria-label={title} class="mt-3 text-4xl leading-[1.05] font-semibold tracking-tighter md:text-6xl">
+      <DecodeText text={title} />
+    </h1>
+    <p class="mt-4 text-lg text-muted">Cette page n’existe pas (ou plus).</p>
+    <p class="text-muted/80" lang="en">This page doesn’t exist.</p>
+
+    <RaisedTile class="mt-10 max-w-2xl">
+      <pre
+        class="overflow-x-auto rounded-xl bg-surface p-5 font-mono text-[13px] leading-relaxed text-muted ring-1 ring-brand-600/40"><code><span class="text-fg">Program received signal SIGSEGV, Segmentation fault.</span>
+<span class="text-accent">0x00000404</span> in <span class="text-fg">resolve_route</span> (path="<span class="text-accent" data-path>/</span>") at router.c:404
+404       return *page; <span class="opacity-70">// page == NULL</span>
+<span class="text-fg">(gdb) bt</span>
+#0  <span class="text-accent">0x00000404</span> in <span class="text-fg">resolve_route</span> () at router.c:404
+#1  <span class="text-accent">0x0000002a</span> in <span class="text-fg">handle_request</span> () at server.c:42
+#2  <span class="text-accent">0x00000001</span> in <span class="text-fg">main</span> () at main.c:1</code></pre>
+    </RaisedTile>
+
+    <div class="mt-12 flex flex-wrap gap-3">
+      <a href="/" class="btn-primary font-mono">return main();</a>
+      <a href="/en/" lang="en" class="btn-secondary">English version</a>
     </div>
   </main>
 </Base>
+
+<script>
+  // Show the path that was requested, shortened if needed.
+  const path = decodeURIComponent(location.pathname);
+  const shown = path.length > 40 ? `${path.slice(0, 39)}…` : path;
+  document.querySelectorAll("[data-path]").forEach((el) => (el.textContent = shown));
+</script>

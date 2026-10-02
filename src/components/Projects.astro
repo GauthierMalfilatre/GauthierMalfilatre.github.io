@@ -14,12 +14,12 @@ const projects = (await getCollection("projects")).sort((a, b) => a.data.order -
 ---
 
 <section id="projects" class="scroll-mt-20 border-t border-line py-20 md:py-28">
-  <SectionTitle>{t("nav.projects")}</SectionTitle>
+  <SectionTitle title={t("nav.projects")} />
 
   <ul class="mt-10 grid gap-5 md:grid-cols-2">
     {
       projects.map(({ data }) => (
-        <li class="lift flex flex-col rounded-xl bg-surface/70 p-6 ring-1 ring-line backdrop-blur-sm hover:ring-brand-600/50">
+        <li class="lift reveal-on-scroll flex flex-col rounded-xl bg-surface/70 p-6 ring-1 ring-line backdrop-blur-sm hover:ring-brand-600/50">
           <h3 class="text-lg font-medium">{data.title}</h3>
           <p class="mt-1 text-sm text-muted">
             {t(data.context === "personal" ? "projects.personal" : "projects.school")} ·{" "}
