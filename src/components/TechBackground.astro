@@ -2,7 +2,8 @@
 // Background "tech wave": every few seconds a wave starts in the top-left corner and
 // lifts the grid squares it passes, then they dissolve back into the background.
 // A click on the background starts a wave from that point, and any script can start one
-// with document.dispatchEvent(new CustomEvent("tech-wave", { detail: { x, y } })).
+// with document.dispatchEvent(new CustomEvent("background-poke", { detail: { x, y } })).
+// Not used at the moment: Base.astro renders LifeBackground.astro instead.
 // Idle between waves (no animation frames); off when the tab is hidden or the
 // visitor prefers reduced motion. Colors come from the --fx-* variables in global.css.
 ---
@@ -164,7 +165,7 @@
       if (getSelection()?.toString()) return; // the end of a text selection, not a click
       spawn(event.clientX, event.clientY);
     });
-    document.addEventListener("tech-wave", (event) => {
+    document.addEventListener("background-poke", (event) => {
       const { x, y } = (event as CustomEvent<{ x: number; y: number }>).detail;
       spawn(x, y);
     });

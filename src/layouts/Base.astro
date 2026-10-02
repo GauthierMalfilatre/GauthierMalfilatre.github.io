@@ -3,7 +3,7 @@ import { getAbsoluteLocaleUrl } from "astro:i18n";
 import "@fontsource-variable/geist";
 import "@fontsource-variable/geist-mono";
 import "../styles/global.css";
-import TechBackground from "../components/TechBackground.astro";
+import LifeBackground from "../components/LifeBackground.astro";
 import { site } from "../site.config";
 import { l, languages, type Lang } from "../i18n/ui";
 
@@ -58,7 +58,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:image" content={site.avatar} />
   </head>
   <body class="min-h-dvh bg-bg font-sans text-fg antialiased">
-    <TechBackground />
+    <LifeBackground />
     <div aria-hidden="true" class="scroll-progress"></div>
     <slot />
   </body>

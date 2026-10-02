@@ -68,10 +68,12 @@ const links = [
     try {
       localStorage.setItem("theme", next);
     } catch {}
-    // Ripple the new theme out from the button (see TechBackground.astro).
+    // Poke the background from the button: a glider heading down-left into the page (see LifeBackground.astro).
     const rect = toggle.getBoundingClientRect();
     document.dispatchEvent(
-      new CustomEvent("tech-wave", { detail: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } }),
+      new CustomEvent("background-poke", {
+        detail: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, dx: -1, dy: 1 },
+      }),
     );
   });
 </script>

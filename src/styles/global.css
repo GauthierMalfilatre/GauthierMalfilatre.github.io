@@ -49,11 +49,12 @@
 
 :root {
   color-scheme: light;
-  /* Background wave colors (read by TechBackground.astro). */
+  /* Background colors (read by LifeBackground.astro, and TechBackground.astro if swapped back). */
   --fx-face: #7e008d;
   --fx-edge: #9a2aab;
   --fx-side: #2e0638;
   --fx-strength: 0.16;
+  --life-strength: 0.32;
   --glow: 9%;
   /* GitHub contribution levels 0-4. */
   --contrib-0: color-mix(in oklab, var(--color-brand-600) 9%, var(--color-bg));
@@ -76,6 +77,7 @@
   --fx-edge: #c46fd0;
   --fx-side: #080808;
   --fx-strength: 0.42;
+  --life-strength: 0.6;
   --glow: 20%;
   --contrib-0: color-mix(in oklab, var(--color-brand-600) 16%, var(--color-bg));
   --contrib-1: var(--color-brand-700);
@@ -97,6 +99,7 @@
     --fx-edge: #c46fd0;
     --fx-side: #080808;
     --fx-strength: 0.42;
+    --life-strength: 0.6;
     --glow: 20%;
     --contrib-0: color-mix(in oklab, var(--color-brand-600) 16%, var(--color-bg));
     --contrib-1: var(--color-brand-700);

@@ -1,0 +1,297 @@
+---
+// Background Game of Life (Conway, B3/S23) on a grid that wraps around the screen edges.
+// It starts with a single glider in the top-left corner heading down-right.
+// Drawing: pressing on the page background pauses the simulation and brings the square under
+// the pointer to life; dragging fills every square passed over; releasing resumes. On touch
+// screens a tap adds one square (dragging still scrolls). Any script can drop a glider with
+// document.dispatchEvent(new CustomEvent("background-poke", { detail: { x, y, dx?, dy? } })).
+// If everything dies or freezes into still lifes, it restarts from one glider.
+// Pauses with the tab (requestAnimationFrame); static single glider with reduced motion.
+// Colors come from the --fx-* and --life-strength variables in global.css.
+// (TechBackground.astro is the previous effect, a periodic wave; swap it back in Base.astro.)
+---
+
+<div aria-hidden="true" class="ambient-glow pointer-events-none fixed inset-0 -z-20"></div>
+<canvas data-life-bg aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 size-full"></canvas>
+
+<script>
+  const CELL = 30; // grid pitch, px
+  const GAP = 6; // space between squares, px
+  const LIFT = 4; // a living square sits this many px up-left of its shadow
+  const TICK = 170; // ms per generation (a glider moves one cell every 4 generations)
+  const FADE = 140; // ms for a square to appear or vanish
+  const STALE_TICKS = 40; // restart after this many generations without any change
+  const START = { col: 1, row: 2 }; // first glider, top-left (just below the header)
+  // Pressing on these draws nothing, so text stays selectable and controls keep working.
+  const NOT_BACKGROUND =
+    "a, button, input, textarea, select, label, summary, [role='button'], p, h1, h2, h3, h4, h5, h6, li, dl, pre, img, svg";
+  const TAP_SLOP = 10; // px a touch may move and still count as a tap
+
+  type Dir = { dx: 1 | -1; dy: 1 | -1 };
+  // Glider heading down-right as [col, row] offsets; mirrored for the other diagonals.
+  const GLIDER: [number, number][] = [
+    [1, 0],
+    [2, 1],
+    [0, 2],
+    [1, 2],
+    [2, 2],
+  ];
+
+  function init(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+    const motion = matchMedia("(prefers-reduced-motion: reduce)");
+    let width = 0;
+    let height = 0;
+    let cols = 0;
+    let rows = 0;
+    let cells = new Uint8Array(0); // 1 = alive
+    let level = new Float32Array(0); // displayed intensity per square, eases toward `cells`
+    let colors = readColors();
+    let frame = 0;
+    let lastTick = 0;
+    let lastFrame = 0;
+    let stale = 0;
+    let paused = false; // while drawing
+    let drawing = false;
+    let lastCol = 0;
+    let lastRow = 0;
+
+    function readColors() {
+      const style = getComputedStyle(document.documentElement);
+      const read = (name: string) => style.getPropertyValue(name).trim();
+      return {
+        face: read("--fx-face"),
+        edge: read("--fx-edge"),
+        side: read("--fx-side"),
+        strength: parseFloat(read("--life-strength")) || 0.4,
+      };
+    }
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // Keep whatever is alive in the part of the grid that still fits.
+      const nextCols = Math.max(3, Math.ceil(width / CELL));
+      const nextRows = Math.max(3, Math.ceil(height / CELL));
+      const nextCells = new Uint8Array(nextCols * nextRows);
+      const nextLevel = new Float32Array(nextCols * nextRows);
+      for (let r = 0; r < Math.min(rows, nextRows); r++) {
+        for (let c = 0; c < Math.min(cols, nextCols); c++) {
+          nextCells[r * nextCols + c] = cells[r * cols + c];
+          nextLevel[r * nextCols + c] = level[r * cols + c];
+        }
+      }
+      cols = nextCols;
+      rows = nextRows;
+      cells = nextCells;
+      level = nextLevel;
+    }
+
+    function place(col: number, row: number, dir: Dir) {
+      for (const [x, y] of GLIDER) {
+        const c = (col + (dir.dx === 1 ? x : 2 - x) + cols) % cols;
+        const r = (row + (dir.dy === 1 ? y : 2 - y) + rows) % rows;
+        cells[r * cols + c] = 1;
+      }
+    }
+
+    function restart() {
+      cells.fill(0); // the old squares fade out while the new glider fades in
+      stale = 0;
+      place(START.col, START.row, { dx: 1, dy: 1 });
+    }
+
+    function step() {
+      const next = new Uint8Array(cells.length);
+      let changed = false;
+      let population = 0;
+      for (let r = 0; r < rows; r++) {
+        const up = ((r - 1 + rows) % rows) * cols;
+        const mid = r * cols;
+        const down = ((r + 1) % rows) * cols;
+        for (let c = 0; c < cols; c++) {
+          const left = (c - 1 + cols) % cols;
+          const right = (c + 1) % cols;
+          const neighbors =
+            cells[up + left] + cells[up + c] + cells[up + right] +
+            cells[mid + left] + cells[mid + right] +
+            cells[down + left] + cells[down + c] + cells[down + right];
+          const i = mid + c;
+          const alive = neighbors === 3 || (neighbors === 2 && cells[i] === 1) ? 1 : 0;
+          next[i] = alive;
+          population += alive;
+          if (alive !== cells[i]) changed = true;
+        }
+      }
+      cells = next;
+      stale = changed ? 0 : stale + 1;
+      if (population === 0 || stale >= STALE_TICKS) restart();
+    }
+
+    function render(ease: number) {
+      const size = CELL - GAP;
+      ctx.clearRect(0, 0, width, height);
+      for (let i = 0; i < cells.length; i++) {
+        level[i] += (cells[i] - level[i]) * ease;
+        const k = level[i];
+        if (k < 0.01) continue;
+        const left = (i % cols) * CELL + GAP / 2;
+        const top = Math.floor(i / cols) * CELL + GAP / 2;
+        const lift = k * LIFT;
+        const alpha = k * colors.strength;
+        // Shadow where the square sits, face lifted up-left: same raised tile as the rest of the site.
+        ctx.globalAlpha = alpha * 0.9;
+        ctx.fillStyle = colors.side;
+        ctx.fillRect(left, top, size, size);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = colors.face;
+        ctx.fillRect(left - lift, top - lift, size, size);
+        ctx.globalAlpha = Math.min(1, alpha * 1.8);
+        ctx.strokeStyle = colors.edge;
+        ctx.strokeRect(left - lift + 0.5, top - lift + 0.5, size - 1, size - 1);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function loop(now: number) {
+      // rAF stops in hidden tabs; on return this does a single step, not a catch-up burst.
+      const dt = lastFrame ? now - lastFrame : 16;
+      lastFrame = now;
+      if (!paused && now - lastTick >= TICK) {
+        step();
+        lastTick = now;
+      }
+      render(Math.min(1, dt / FADE));
+      frame = requestAnimationFrame(loop);
+    }
+
+    function start() {
+      cancelAnimationFrame(frame);
+      if (motion.matches) {
+        render(1); // reduced motion: the current pattern, drawn once, standing still
+        return;
+      }
+      lastFrame = 0;
+      lastTick = performance.now();
+      frame = requestAnimationFrame(loop);
+    }
+
+    function poke(x: number, y: number, dir?: Partial<Dir>) {
+      if (motion.matches) return;
+      colors = readColors(); // the theme may have just changed
+      const random = () => (Math.random() < 0.5 ? 1 : -1);
+      place(Math.floor(x / CELL), Math.floor(y / CELL), { dx: dir?.dx ?? random(), dy: dir?.dy ?? random() });
+    }
+
+    function setCell(col: number, row: number) {
+      if (col >= 0 && row >= 0 && col < cols && row < rows) cells[row * cols + col] = 1;
+    }
+
+    /** Bring to life every square on the straight line from the last drawn one, so fast moves leave no gaps. */
+    function drawTo(x: number, y: number) {
+      const col = Math.floor(x / CELL);
+      const row = Math.floor(y / CELL);
+      const dc = Math.abs(col - lastCol);
+      const dr = -Math.abs(row - lastRow);
+      const sc = lastCol < col ? 1 : -1;
+      const sr = lastRow < row ? 1 : -1;
+      let c = lastCol;
+      let r = lastRow;
+      let err = dc + dr;
+      for (;;) {
+        setCell(c, r);
+        if (c === col && r === row) break;
+        const e2 = 2 * err;
+        if (e2 >= dr) {
+          err += dr;
+          c += sc;
+        }
+        if (e2 <= dc) {
+          err += dc;
+          r += sr;
+        }
+      }
+      lastCol = col;
+      lastRow = row;
+    }
+
+    const isBackground = (target: EventTarget | null) =>
+      !(target instanceof Element && target.closest(NOT_BACKGROUND));
+
+    function stopDrawing() {
+      if (!drawing) return;
+      drawing = false;
+      paused = false;
+      stale = 0;
+      lastTick = performance.now(); // the first generation comes one tick after release
+      document.documentElement.style.userSelect = "";
+    }
+
+    let resizeTimer = 0;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        resize();
+        if (motion.matches) render(1);
+      }, 150);
+    });
+    motion.addEventListener("change", start);
+    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+      colors = readColors();
+      if (motion.matches) render(1);
+    });
+
+    // Mouse and pen: press to pause and draw, drag to fill, release to resume.
+    let tapStart: { x: number; y: number } | null = null;
+    document.addEventListener("pointerdown", (event) => {
+      if (motion.matches || event.button !== 0 || !isBackground(event.target)) return;
+      if (event.pointerType === "touch") {
+        tapStart = { x: event.clientX, y: event.clientY };
+        return;
+      }
+      event.preventDefault();
+      getSelection()?.removeAllRanges();
+      document.documentElement.style.userSelect = "none";
+      colors = readColors();
+      drawing = true;
+      paused = true;
+      lastCol = Math.floor(event.clientX / CELL);
+      lastRow = Math.floor(event.clientY / CELL);
+      drawTo(event.clientX, event.clientY);
+    });
+    window.addEventListener("pointermove", (event) => {
+      if (drawing) drawTo(event.clientX, event.clientY);
+    });
+    window.addEventListener("pointerup", (event) => {
+      // Touch: a tap adds one square. A drag that scrolled the page ends in pointercancel instead.
+      if (event.pointerType === "touch" && tapStart) {
+        if (Math.hypot(event.clientX - tapStart.x, event.clientY - tapStart.y) <= TAP_SLOP) {
+          colors = readColors();
+          setCell(Math.floor(event.clientX / CELL), Math.floor(event.clientY / CELL));
+        }
+        tapStart = null;
+      }
+      stopDrawing();
+    });
+    window.addEventListener("pointercancel", () => {
+      tapStart = null;
+      stopDrawing();
+    });
+    window.addEventListener("blur", stopDrawing);
+    document.addEventListener("background-poke", (event) => {
+      const { x, y, dx, dy } = (event as CustomEvent<{ x: number; y: number } & Partial<Dir>>).detail;
+      poke(x, y, { dx, dy });
+    });
+
+    resize();
+    restart();
+    start();
+  }
+
+  const canvas = document.querySelector<HTMLCanvasElement>("[data-life-bg]");
+  const ctx = canvas?.getContext("2d");
+  if (canvas && ctx) init(canvas, ctx);
+</script>
