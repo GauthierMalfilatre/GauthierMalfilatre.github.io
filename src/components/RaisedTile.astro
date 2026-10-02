@@ -1,0 +1,19 @@
+---
+// Content resting on a raised purple tile offset down-right, echoing the background squares.
+// The content itself should be opaque so the tile only shows around its edge.
+interface Props {
+  class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<div class:list={["relative", className]}>
+  <div
+    aria-hidden="true"
+    class="absolute inset-0 translate-x-2.5 translate-y-2.5 rounded-xl bg-brand-600/25 ring-1 ring-brand-600/40 md:translate-x-4 md:translate-y-4"
+  >
+  </div>
+  <div class="relative">
+    <slot />
+  </div>
+</div>

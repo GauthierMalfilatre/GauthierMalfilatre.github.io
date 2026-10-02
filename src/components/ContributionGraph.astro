@@ -2,6 +2,7 @@
 // Mini GitHub contribution graph: the last 26 weeks, in the brand purple scale.
 // The grid is right-aligned and clipped, so narrow layouts show only the most recent weeks.
 import Icon from "./Icon.astro";
+import RaisedTile from "./RaisedTile.astro";
 import { getContributions } from "../lib/github";
 import { site } from "../site.config";
 import { useTranslations, type Lang } from "../i18n/ui";
@@ -37,30 +38,29 @@ const summary = data ? t("github.total").replace("{n}", number.format(data.total
 
 {
   data && (
-    <a
-      href={site.github}
-      class:list={[
-        "group block min-w-0 rounded-xl bg-surface/70 p-3 ring-1 ring-line backdrop-blur-sm transition hover:ring-brand-600/50",
-        className,
-      ]}
-    >
-      <p class="flex items-center gap-1.5 text-xs text-muted transition-colors group-hover:text-accent">
-        <Icon name="github-logo" class="size-3.5 shrink-0" />
-        <span class="truncate">{summary}</span>
-      </p>
-      <div
-        role="img"
-        aria-label={summary}
-        class="mt-2.5 grid grid-flow-col grid-rows-7 auto-cols-[10px] justify-[unsafe_end] gap-[3px] overflow-hidden"
+    <RaisedTile class={["min-w-0", className].filter(Boolean).join(" ")}>
+      <a
+        href={site.github}
+        class="group block rounded-xl bg-surface p-3 ring-1 ring-brand-600/40 transition hover:ring-brand-600/70"
       >
-        {days.map((day) => (
-          <span
-            class="size-[10px]"
-            style={`background: var(--contrib-${day.level})`}
-            title={describe(day.count, day.date)}
-          />
-        ))}
-      </div>
-    </a>
+        <p class="flex items-center gap-1.5 text-xs text-muted transition-colors group-hover:text-accent">
+          <Icon name="github-logo" class="size-3.5 shrink-0" />
+          <span class="truncate">{summary}</span>
+        </p>
+        <div
+          role="img"
+          aria-label={summary}
+          class="mt-2.5 grid grid-flow-col grid-rows-7 auto-cols-[10px] justify-[unsafe_end] gap-[3px] overflow-hidden"
+        >
+          {days.map((day) => (
+            <span
+              class="size-[10px]"
+              style={`background: var(--contrib-${day.level})`}
+              title={describe(day.count, day.date)}
+            />
+          ))}
+        </div>
+      </a>
+    </RaisedTile>
   )
 }
