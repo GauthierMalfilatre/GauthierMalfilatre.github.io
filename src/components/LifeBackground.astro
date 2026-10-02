@@ -5,8 +5,15 @@
 // the pointer to life; dragging fills every square passed over; releasing resumes. On touch
 // screens a tap adds one square (dragging still scrolls).
 // Gravitational lensing: with a mouse, a faint spacetime grid bends toward the pointer while it
-// moves and pulls nearby squares in. Easter egg: typing "hawking" drops a black hole that swallows
-// cells, spirals nearby ones in, leaks Hawking radiation, evaporates and pops into four gliders.
+// moves and pulls nearby squares in. Easter eggs, typed anywhere outside a text field:
+// - "hawking": a black hole swallows cells, spirals nearby ones in, leaks Hawking radiation,
+//   evaporates and pops into four gliders.
+// - "poincare": the three-body figure-eight orbit, then one body is sped up by 0.1% (the orbit
+//   holds: it is stable), then by 5% more (it breaks up and ejects a body); a faint ghost keeps
+//   the unperturbed orbit for comparison.
+// - "trisolaris": three suns on a random, chaotic orbit that bend spacetime and eat Life cells,
+//   until one of them is ejected.
+// Three-body physics lives in src/scripts/three-body.ts; captions go to the aria-live element below.
 // Events: "background-poke" ({ x, y, dx?, dy? }) drops a glider; "background-pause" ({ paused })
 // comes from the header button, which also stores the choice in localStorage ("life-paused").
 // While paused and settled, no frames are requested. Static single glider with reduced motion.
@@ -16,8 +23,16 @@
 
 <div aria-hidden="true" class="ambient-glow pointer-events-none fixed inset-0 -z-20"></div>
 <canvas data-life-bg aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 size-full"></canvas>
+<p
+  data-bg-caption
+  aria-live="polite"
+  class="pointer-events-none fixed inset-x-0 bottom-6 z-40 mx-auto w-fit max-w-[calc(100%-2rem)] rounded-lg bg-bg/85 px-3 py-1.5 text-center font-mono text-xs text-accent opacity-0 ring-1 ring-brand-600/30 backdrop-blur-sm transition-opacity duration-500"
+>
+</p>
 
 <script>
+  import { advance, clone, figureEight, randomTriple, FIGURE_EIGHT_PERIOD, type Body } from "../scripts/three-body";
+
   const CELL = 30; // grid pitch, px
   const GAP = 6; // space between squares, px
   const LIFT = 4; // a living square sits this many px up-left of its shadow
@@ -38,14 +53,53 @@
   const LENS_IDLE = 1400; // ms after the last move before the well fades away
 
   // Black hole easter egg.
-  const SECRET = "hawking";
   const HOLE_RADIUS = 4; // cells, at birth
   const HOLE_LIFE = 14_000; // ms to evaporate; radius follows (1 - t/T)^(1/3), like a Hawking mass
   const DISK_PARTICLES = 46;
   const BURST_MS = 600;
 
+  // Three-body easter eggs (dimensionless units, see three-body.ts).
+  const EIGHT_SECONDS = 3.2; // one figure-eight period on screen
+  const CHAOS_SPEEDUP = 3; // time runs this much faster once the orbit is broken, shown in the caption
+  const CHAOS_MAX_MS = 20_000; // give up waiting for an ejection after this long
+  const SUNS_MAX_MS = 40_000;
+  const ORBIT_FADE_MS = 1200;
+  const TRAIL_POINTS = 110;
+  const CAPTIONS = {
+    eight: { fr: "Orbite en 8 · Chenciner & Montgomery, 2000", en: "Figure-eight orbit · Chenciner & Montgomery, 2000" },
+    stable: {
+      fr: "Un corps accéléré de 0,1 % : l’orbite résiste, elle est stable",
+      en: "One body sped up by 0.1%: the orbit holds, it is stable",
+    },
+    breaks: {
+      fr: `Encore +5 % : l’orbite se brise (temps ×${CHAOS_SPEEDUP})`,
+      en: `Another 5%: the orbit breaks up (time ×${CHAOS_SPEEDUP})`,
+    },
+    ejected: { fr: "Un corps est éjecté : c’est le chaos", en: "One body is ejected: that is chaos" },
+    suns: { fr: "Trois soleils : aucune solution générale", en: "Three suns: no general solution" },
+    sunEjected: { fr: "Un soleil a été éjecté", en: "A sun was ejected" },
+  };
+
   type Dir = { dx: 1 | -1; dy: 1 | -1 };
   type Mass = { x: number; y: number; pull: number; sigma: number };
+  interface Orbit {
+    kind: "poincare" | "trisolaris";
+    bodies: Body[];
+    ghost: Body[] | null; // poincare: the unperturbed figure-eight
+    trails: { x: number; y: number }[][]; // px, newest last
+    ghostTrails: { x: number; y: number }[][];
+    scale: number; // px per unit
+    softening: number;
+    dt: number; // max integration step (smaller for the close encounters of random suns)
+    speed: number; // simulated units per second
+    simTime: number;
+    phase: number; // poincare: 1 eight, 2 +0.1%, 3 +5%
+    phaseStart: number; // ms
+    born: number; // ms
+    ejected: boolean;
+    endAt: number | null; // ms when the fade-out starts
+  }
+
   interface Hole {
     col: number;
     row: number;
@@ -86,6 +140,9 @@
     let lensLevel = 0; // eases toward 1 while the mouse moves, back to 0 when idle
     let hole: Hole | null = null;
     let burst: { x: number; y: number; start: number } | null = null;
+    let orbit: Orbit | null = null;
+    const caption = document.querySelector<HTMLElement>("[data-bg-caption]");
+    const lang = document.documentElement.lang === "en" ? "en" : "fr";
 
     function readPaused() {
       try {
@@ -104,6 +161,7 @@
         side: read("--fx-side"),
         strength: parseFloat(read("--life-strength")) || 0.4,
         hot: [read("--color-brand-200"), read("--color-brand-300"), "#f3eff5"],
+        orbit: [read("--orbit-1"), read("--orbit-2"), read("--orbit-3")],
         glow: read("--color-brand-600"),
       };
     }
@@ -168,17 +226,26 @@
         }
       }
       cells = next;
+      if (orbit?.kind === "trisolaris") {
+        // The suns eat the squares they pass over and drag nearby ones along.
+        for (const p of orbitPixels(orbit, orbit.bodies)) pullCells(p.x / CELL - 0.5, p.y / CELL - 0.5, 1.2, 4, 0.4, 0);
+        stale = 0;
+      }
       if (hole) {
         feedHole(hole);
         stale = 0;
         return;
       }
+      if (orbit) return;
       stale = changed ? 0 : stale + 1;
       if (population === 0 || stale >= STALE_TICKS) restart();
     }
 
-    /** One generation of black hole physics on top of the Life rules. */
-    function feedHole({ col: hc, row: hr, radius }: Hole) {
+    /**
+     * Gravity on the Life grid around (hc, hr), in cells: squares closer than `swallow` vanish, those
+     * within `reach` drift one cell toward it (plus a sideways `swirl` that makes them spiral in).
+     */
+    function pullCells(hc: number, hr: number, swallow: number, reach: number, chance: number, swirl: number) {
       const moves: [number, number][] = [];
       for (let i = 0; i < cells.length; i++) {
         if (!cells[i]) continue;
@@ -187,12 +254,11 @@
         const vx = hc - c;
         const vy = hr - r;
         const d = Math.hypot(vx, vy);
-        if (d < radius) {
-          cells[i] = 0; // past the event horizon
-        } else if (d < radius * 2.6 && Math.random() < 0.35) {
-          // Fall in along a spiral: toward the hole plus an orbital (sideways) component.
-          const tx = vx / d - (vy / d) * 0.9;
-          const ty = vy / d + (vx / d) * 0.9;
+        if (d < swallow) {
+          cells[i] = 0;
+        } else if (d < reach && Math.random() < chance) {
+          const tx = vx / d - (vy / d) * swirl;
+          const ty = vy / d + (vx / d) * swirl;
           moves.push([i, at(c + Math.sign(Math.round(tx)), r + Math.sign(Math.round(ty)))]);
         }
       }
@@ -202,6 +268,11 @@
           cells[to] = 1;
         }
       }
+    }
+
+    /** One generation of black hole physics on top of the Life rules. */
+    function feedHole({ col: hc, row: hr, radius }: Hole) {
+      pullCells(hc, hr, radius, radius * 2.6, 0.35, 0.9); // past the horizon: gone; nearby: spiral in
       // Hawking radiation: single squares just outside the horizon, now and then an escaping glider.
       if (Math.random() < 0.6) {
         const a = Math.random() * Math.PI * 2;
@@ -228,6 +299,130 @@
         })),
       };
       wake();
+    }
+
+    function say(text: string | null) {
+      if (!caption) return;
+      if (text) caption.textContent = text;
+      caption.style.opacity = text ? "1" : "0";
+    }
+
+    function spawnOrbit(kind: Orbit["kind"]) {
+      if (motion.matches || orbit) return;
+      colors = readColors();
+      const now = performance.now();
+      const poincare = kind === "poincare";
+      const bodies = poincare ? figureEight() : randomTriple();
+      orbit = {
+        kind,
+        bodies,
+        ghost: poincare ? clone(bodies) : null,
+        trails: bodies.map(() => []),
+        ghostTrails: bodies.map(() => []),
+        scale: poincare ? Math.min(width * 0.3, 300) : Math.min(width, height) * 0.22,
+        softening: poincare ? 0.01 : 0.05,
+        dt: poincare ? 0.001 : 0.0005,
+        speed: poincare ? FIGURE_EIGHT_PERIOD / EIGHT_SECONDS : 1.5,
+        simTime: 0,
+        phase: 1,
+        phaseStart: now,
+        born: now,
+        ejected: false,
+        endAt: null,
+      };
+      say(CAPTIONS[poincare ? "eight" : "suns"][lang]);
+      wake();
+    }
+
+    /** Body positions on screen, around the center of the viewport. */
+    const orbitPixels = (o: Orbit, bodies: Body[]) =>
+      bodies.map((b) => ({ x: width / 2 + b.x * o.scale, y: height / 2 + b.y * o.scale }));
+
+    function updateOrbit(o: Orbit, now: number, dt: number) {
+      if (o.endAt !== null && now > o.endAt + ORBIT_FADE_MS) {
+        orbit = null;
+        say(null);
+        return;
+      }
+      if (userPaused) return;
+
+      // Poincaré's story: a stable orbit, a tiny push it survives, a bigger one it does not.
+      if (o.kind === "poincare") {
+        const periods = o.simTime / FIGURE_EIGHT_PERIOD;
+        if (o.phase === 1 && periods >= 1.5) {
+          o.bodies[0].vx *= 1.001;
+          o.bodies[0].vy *= 1.001;
+          o.phase = 2;
+          o.phaseStart = now;
+          say(CAPTIONS.stable[lang]);
+        } else if (o.phase === 2 && periods >= 3) {
+          o.bodies[0].vx *= 1.05;
+          o.bodies[0].vy *= 1.05;
+          o.phase = 3;
+          o.phaseStart = now;
+          say(CAPTIONS.breaks[lang]);
+        }
+      }
+      const speedup = o.kind === "poincare" && o.phase === 3 ? Math.min(CHAOS_SPEEDUP, 1 + (now - o.phaseStart) / 1000) : 1;
+      const time = o.speed * speedup * (Math.min(dt, 50) / 1000); // cap: no huge jump after a hidden tab
+      advance(o.bodies, time, o.dt, o.softening);
+      if (o.ghost) advance(o.ghost, time, o.dt, o.softening);
+      o.simTime += time;
+
+      const push = (trails: { x: number; y: number }[][], bodies: Body[]) =>
+        orbitPixels(o, bodies).forEach((p, i) => {
+          trails[i].push(p);
+          if (trails[i].length > TRAIL_POINTS) trails[i].shift();
+        });
+      push(o.trails, o.bodies);
+      if (o.ghost) push(o.ghostTrails, o.ghost);
+
+      // Ejection: a body leaves the screen (trisolaris) or flies far from the others (poincare).
+      if (!o.ejected) {
+        const out =
+          o.kind === "trisolaris"
+            ? orbitPixels(o, o.bodies).some((p) => p.x < -60 || p.y < -60 || p.x > width + 60 || p.y > height + 60)
+            : o.phase === 3 && o.bodies.some((b) => Math.hypot(b.x, b.y) > 3.5);
+        if (out) {
+          o.ejected = true;
+          o.endAt = now + 3500;
+          say((o.kind === "poincare" ? CAPTIONS.ejected : CAPTIONS.sunEjected)[lang]);
+        }
+      }
+      const giveUp = o.kind === "poincare" ? o.phase === 3 && now - o.phaseStart > CHAOS_MAX_MS : now - o.born > SUNS_MAX_MS;
+      if (o.endAt === null && giveUp) o.endAt = now;
+    }
+
+    function drawOrbit(o: Orbit, now: number, masses: Mass[]) {
+      const fade = o.endAt !== null && now > o.endAt ? Math.max(0, 1 - (now - o.endAt) / ORBIT_FADE_MS) : 1;
+      const tones = colors.orbit;
+      const pixels = orbitPixels(o, o.bodies);
+      const extent = o.kind === "poincare" ? o.scale * 1.35 : Math.max(...pixels.map((p) => Math.hypot(p.x - width / 2, p.y - height / 2))) + 140;
+      drawWell(width / 2, height / 2, Math.min(extent, Math.max(width, height)), 0.45 * fade, masses);
+
+      const drawSet = (trails: { x: number; y: number }[][], bodies: { x: number; y: number }[], ghost: boolean) => {
+        trails.forEach((trail, i) => {
+          ctx.fillStyle = tones[i];
+          trail.forEach((p, k) => {
+            ctx.globalAlpha = fade * (ghost ? 0.18 : 0.7) * (k / trail.length);
+            ctx.fillRect(p.x - 1.5, p.y - 1.5, 3, 3);
+          });
+        });
+        bodies.forEach((p, i) => {
+          const size = ghost ? 9 : o.kind === "trisolaris" ? 15 : 12;
+          ctx.globalAlpha = fade * (ghost ? 0.3 : 1);
+          ctx.fillStyle = tones[i];
+          if (!ghost) {
+            ctx.shadowColor = colors.glow;
+            ctx.shadowBlur = o.kind === "trisolaris" ? 26 : 16;
+          }
+          ctx.fillRect(p.x - size / 2, p.y - size / 2, size, size);
+          ctx.shadowBlur = 0;
+        });
+      };
+      if (o.ghost) drawSet(o.ghostTrails, orbitPixels(o, o.ghost), true);
+      drawSet(o.trails, pixels, false);
+      ctx.globalAlpha = 1;
     }
 
     /** The black hole is gone: what is left escapes as four gliders, one per diagonal. */
@@ -314,6 +509,12 @@
       const hx = hole ? (hole.col + 0.5) * CELL : 0;
       const hy = hole ? (hole.row + 0.5) * CELL : 0;
       if (hole) masses.push({ x: hx, y: hy, pull: 0.55, sigma: hole.radius * CELL * 2.2 });
+      if (orbit) {
+        const sigma = orbit.kind === "trisolaris" ? 75 : 55;
+        orbitPixels(orbit, orbit.bodies).forEach((p, i) =>
+          masses.push({ x: p.x, y: p.y, pull: 0.22 * orbit!.bodies[i].m, sigma }),
+        );
+      }
 
       if (pointer && lensLevel > 0.01) drawWell(pointer.x, pointer.y, LENS_RADIUS, lensLevel * 0.5, masses);
       if (hole) {
@@ -367,6 +568,10 @@
         ctx.shadowBlur = 0;
         settled = false;
       }
+      if (orbit) {
+        drawOrbit(orbit, now, masses);
+        if (!userPaused || orbit.endAt !== null) settled = false;
+      }
       if (burst) {
         const t = (now - burst.start) / BURST_MS;
         ctx.globalAlpha = Math.max(0, 1 - t);
@@ -394,6 +599,7 @@
         if (hole.radius < 0.6) pop(hole, now);
       }
       if (burst && now - burst.start > BURST_MS) burst = null;
+      if (orbit) updateOrbit(orbit, now, dt);
       if (!userPaused && !drawing && now - lastTick >= TICK) {
         step();
         lastTick = now;
@@ -421,6 +627,8 @@
       frame = 0;
       if (motion.matches) {
         hole = null;
+        orbit = null;
+        say(null);
         pointer = null;
         lensLevel = 0;
       }
@@ -551,18 +759,28 @@
       poke(x, y, { dx, dy });
     });
 
-    // Easter egg: type the secret anywhere outside a text field.
+    // Easter eggs: type a secret word anywhere outside a text field.
+    const secrets: Record<string, () => void> = {
+      hawking: spawnHole,
+      poincare: () => spawnOrbit("poincare"),
+      trisolaris: () => spawnOrbit("trisolaris"),
+    };
+    const longest = Math.max(...Object.keys(secrets).map((word) => word.length));
     let typed = "";
     document.addEventListener("keydown", (event) => {
       if (event.ctrlKey || event.metaKey || event.altKey || event.key.length !== 1) return;
       if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable]")) return;
-      typed = (typed + event.key.toLowerCase()).slice(-SECRET.length);
-      if (typed === SECRET) {
+      typed = (typed + event.key.toLowerCase()).slice(-longest);
+      const word = Object.keys(secrets).find((w) => typed.endsWith(w));
+      if (word) {
         typed = "";
-        spawnHole();
+        secrets[word]();
       }
     });
-    console.info(`%cpsst: type "${SECRET}" anywhere on this page.`, "color: #b55ac4");
+    console.info(
+      `%cpsst: type ${Object.keys(secrets).map((w) => `"${w}"`).join(", ")} anywhere on this page.`,
+      "color: #b55ac4",
+    );
 
     resize();
     restart();

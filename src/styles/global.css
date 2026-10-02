@@ -63,6 +63,10 @@
   --contrib-2: var(--color-brand-400);
   --contrib-3: var(--color-brand-600);
   --contrib-4: var(--color-brand-800);
+  /* Three-body easter eggs: one color per body (LifeBackground.astro). */
+  --orbit-1: var(--color-brand-600);
+  --orbit-2: var(--color-brand-800);
+  --orbit-3: var(--color-brand-400);
 }
 
 /* Dark tokens, applied in both dark cases (pinned, or following the OS). Keep the two blocks in sync. */
@@ -85,6 +89,9 @@
   --contrib-2: var(--color-brand-500);
   --contrib-3: var(--color-brand-300);
   --contrib-4: var(--color-brand-100);
+  --orbit-1: var(--color-brand-200);
+  --orbit-2: #f3eff5;
+  --orbit-3: var(--color-brand-300);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -107,6 +114,9 @@
     --contrib-2: var(--color-brand-500);
     --contrib-3: var(--color-brand-300);
     --contrib-4: var(--color-brand-100);
+    --orbit-1: var(--color-brand-200);
+    --orbit-2: #f3eff5;
+    --orbit-3: var(--color-brand-300);
   }
 }
 
