@@ -4,6 +4,7 @@ import "@fontsource-variable/geist";
 import "@fontsource-variable/geist-mono";
 import "../styles/global.css";
 import LifeBackground from "../components/LifeBackground.astro";
+import StarField from "../components/StarField.astro";
 import { site } from "../site.config";
 import { l, languages, type Lang } from "../i18n/ui";
 
@@ -58,6 +59,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:image" content={site.avatar} />
   </head>
   <body class="min-h-dvh bg-bg font-sans text-fg antialiased">
+    <StarField />
     <LifeBackground />
     <div aria-hidden="true" class="scroll-progress"></div>
     <slot />

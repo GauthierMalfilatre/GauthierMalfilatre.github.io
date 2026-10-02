@@ -30,7 +30,8 @@ const cvIsFallback = !site.cv[lang];
     </p>
     <h1
       aria-label={site.name}
-      class="reveal mt-6 text-4xl leading-[1.05] font-semibold tracking-tighter md:text-6xl"
+      data-text={site.name}
+      class="quantum reveal mt-6 text-4xl leading-[1.05] font-semibold tracking-tighter md:text-6xl"
       style="--i: 1"
     >
       <DecodeText text={site.name} />

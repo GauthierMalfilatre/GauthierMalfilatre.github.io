@@ -1,0 +1,153 @@
+---
+// Dark-theme starfield behind the Game of Life: sparse square "pixel stars" that twinkle slowly,
+// plus a shooting star now and then. Hidden in the light theme. Redraws at ~8 fps (60 only during a
+// shooting star); static with reduced motion or while the background is paused (header button).
+---
+
+<canvas data-stars aria-hidden="true" class="pointer-events-none fixed inset-0 -z-15 size-full"></canvas>
+
+<script>
+  const DENSITY = 1 / 9000; // stars per px²
+  const TWINKLE_MS = 120; // redraw interval while twinkling
+  const SHOOT_MIN = 12_000; // ms between shooting stars
+  const SHOOT_MAX = 35_000;
+  const SHOOT_MS = 900; // duration of one shooting star
+  const SHOOT_SPEED = 900; // px/s
+  const TRAIL = 12; // squares in a shooting star's trail
+  const TONES = ["#ece8f1", "#ece8f1", "#ece8f1", "#e4b0ec", "#d38ee0"];
+
+  interface Star {
+    x: number;
+    y: number;
+    size: number;
+    alpha: number;
+    speed: number; // twinkles per second
+    phase: number;
+    tone: string;
+  }
+
+  function init(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+    const root = document.documentElement;
+    const motion = matchMedia("(prefers-reduced-motion: reduce)");
+    const darkScheme = matchMedia("(prefers-color-scheme: dark)");
+    let width = 0;
+    let height = 0;
+    let stars: Star[] = [];
+    let twinkle = 0;
+    let shootTimer = 0;
+    let shooting = false;
+    let paused = false;
+    try {
+      paused = localStorage.getItem("life-paused") === "1";
+    } catch {}
+
+    const isDark = () => (root.dataset.theme ? root.dataset.theme === "dark" : darkScheme.matches);
+    const still = () => motion.matches || paused;
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      stars = Array.from({ length: Math.round(width * height * DENSITY) }, () => ({
+        x: Math.round(Math.random() * width),
+        y: Math.round(Math.random() * height),
+        size: Math.random() < 0.85 ? 1 : Math.random() < 0.8 ? 2 : 3,
+        alpha: 0.25 + Math.random() * 0.55,
+        speed: 0.15 + Math.random() * 0.6,
+        phase: Math.random() * Math.PI * 2,
+        tone: TONES[Math.floor(Math.random() * TONES.length)],
+      }));
+    }
+
+    function drawStars(now: number) {
+      ctx.clearRect(0, 0, width, height);
+      for (const s of stars) {
+        const flicker = still() ? 1 : 0.6 + 0.4 * Math.sin((now / 1000) * s.speed * Math.PI * 2 + s.phase);
+        ctx.globalAlpha = s.alpha * flicker;
+        ctx.fillStyle = s.tone;
+        ctx.fillRect(s.x, s.y, s.size, s.size);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function shoot() {
+      if (document.hidden || still() || !isDark()) return schedule();
+      // From the upper part of the screen, heading down-left.
+      const x0 = width * (0.35 + Math.random() * 0.65);
+      const y0 = height * Math.random() * 0.35;
+      const length = Math.hypot(1, 0.55);
+      const dx = -1 / length;
+      const dy = 0.55 / length;
+      const start = performance.now();
+      shooting = true;
+      const frame = (now: number) => {
+        const t = (now - start) / SHOOT_MS;
+        drawStars(now);
+        if (t < 1) {
+          const travelled = (now - start) / 1000 * SHOOT_SPEED;
+          for (let i = 0; i < TRAIL; i++) {
+            const back = travelled - i * 7;
+            if (back < 0) break;
+            ctx.globalAlpha = (1 - i / TRAIL) * Math.sin(Math.PI * t); // fades in and out over its flight
+            ctx.fillStyle = i === 0 ? "#f3eff5" : TONES[3];
+            const size = i === 0 ? 3 : 2;
+            ctx.fillRect(Math.round(x0 + dx * back), Math.round(y0 + dy * back), size, size);
+          }
+          ctx.globalAlpha = 1;
+          requestAnimationFrame(frame);
+        } else {
+          shooting = false;
+          schedule();
+        }
+      };
+      requestAnimationFrame(frame);
+    }
+
+    function schedule() {
+      clearTimeout(shootTimer);
+      shootTimer = window.setTimeout(shoot, SHOOT_MIN + Math.random() * (SHOOT_MAX - SHOOT_MIN));
+    }
+
+    /** Applies the current theme / motion / pause state. */
+    function update() {
+      clearInterval(twinkle);
+      clearTimeout(shootTimer);
+      if (!isDark()) {
+        ctx.clearRect(0, 0, width, height);
+        return;
+      }
+      drawStars(performance.now());
+      if (still()) return;
+      twinkle = window.setInterval(() => {
+        if (!document.hidden && !shooting) drawStars(performance.now());
+      }, TWINKLE_MS);
+      schedule();
+    }
+
+    let resizeTimer = 0;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        resize();
+        update();
+      }, 150);
+    });
+    new MutationObserver(update).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+    darkScheme.addEventListener("change", update);
+    motion.addEventListener("change", update);
+    document.addEventListener("background-pause", (event) => {
+      paused = (event as CustomEvent<{ paused: boolean }>).detail.paused;
+      update();
+    });
+
+    resize();
+    update();
+  }
+
+  const canvas = document.querySelector<HTMLCanvasElement>("[data-stars]");
+  const ctx = canvas?.getContext("2d");
+  if (canvas && ctx) init(canvas, ctx);
+</script>

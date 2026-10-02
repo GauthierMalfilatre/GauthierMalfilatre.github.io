@@ -5,7 +5,8 @@
  * <html data-theme="...">, persisted in localStorage.
  * Visual motif: square "tiles" that lift (the background wave, section markers, hover states).
  * Radius scale: rounded-xl for buttons, images and panels; rounded-lg for chips.
- * Layers: background glow -z-20, background wave -z-10, sticky header z-20, scroll progress z-30.
+ * Layers: background glow -z-20, stars -z-15, Game of Life -z-10, sticky header z-20,
+ * scroll progress z-30, theme switch black hole z-50.
  */
 @custom-variant dark {
   &:where([data-theme="dark"], [data-theme="dark"] *) {
@@ -241,6 +242,77 @@
   from {
     opacity: 0;
     transform: translateY(24px);
+  }
+}
+
+/* Theme switch "black hole" (Header.astro): the new theme's background swallows the page. */
+.theme-hole {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  background: #f8f7f9; /* light --color-bg */
+}
+.theme-hole[data-to="dark"] {
+  background: #161616; /* dark --color-bg */
+}
+.theme-hole-ring {
+  position: fixed;
+  z-index: 51;
+  pointer-events: none;
+  border-radius: 9999px;
+  border: 2px solid var(--color-brand-300);
+  box-shadow:
+    0 0 40px 10px color-mix(in oklab, var(--color-brand-600) 70%, transparent),
+    inset 0 0 40px 10px color-mix(in oklab, var(--color-brand-600) 70%, transparent);
+}
+
+/*
+ * Quantum name (Hero.astro): two faint purple copies drift around it in superposition;
+ * hovering it (an observation) collapses them. Mouse devices only, never with reduced motion.
+ * The heading's aria-label keeps the generated text out of its accessible name.
+ */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .quantum {
+    position: relative;
+    isolation: isolate;
+  }
+  .quantum::before,
+  .quantum::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    color: var(--color-brand-500);
+    opacity: 0.4;
+    transition:
+      translate 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 0.5s ease;
+  }
+  .quantum::before {
+    translate: -4px -2px;
+    animation: superpose 3.2s ease-in-out infinite alternate;
+  }
+  .quantum::after {
+    translate: 4px 2px;
+    color: var(--color-brand-300);
+    animation: superpose 2.6s ease-in-out infinite alternate-reverse;
+  }
+  .quantum:hover::before,
+  .quantum:hover::after {
+    translate: 0 0;
+    opacity: 0;
+    animation-play-state: paused;
+  }
+}
+
+@keyframes superpose {
+  from {
+    transform: translate(-2px, 1px);
+  }
+  to {
+    transform: translate(2px, -1px);
   }
 }
 

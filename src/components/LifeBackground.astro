@@ -3,13 +3,14 @@
 // It starts with a single glider in the top-left corner heading down-right.
 // Drawing: pressing on the page background pauses the simulation and brings the square under
 // the pointer to life; dragging fills every square passed over; releasing resumes. On touch
-// screens a tap adds one square (dragging still scrolls). Any script can drop a glider with
-// document.dispatchEvent(new CustomEvent("background-poke", { detail: { x, y, dx?, dy? } })).
-// The header's pause button sends "background-pause" ({ paused }) and stores the choice in
-// localStorage ("life-paused"); while paused and settled, no frames are requested at all.
-// If everything dies or freezes into still lifes, it restarts from one glider.
-// Pauses with the tab (requestAnimationFrame); static single glider with reduced motion.
-// Colors come from the --fx-* and --life-strength variables in global.css.
+// screens a tap adds one square (dragging still scrolls).
+// Gravitational lensing: with a mouse, a faint spacetime grid bends toward the pointer while it
+// moves and pulls nearby squares in. Easter egg: typing "hawking" drops a black hole that swallows
+// cells, spirals nearby ones in, leaks Hawking radiation, evaporates and pops into four gliders.
+// Events: "background-poke" ({ x, y, dx?, dy? }) drops a glider; "background-pause" ({ paused })
+// comes from the header button, which also stores the choice in localStorage ("life-paused").
+// While paused and settled, no frames are requested. Static single glider with reduced motion.
+// Colors come from the --fx-*, --life-strength and brand variables in global.css.
 // (TechBackground.astro is the previous effect, a periodic wave; swap it back in Base.astro.)
 ---
 
@@ -30,7 +31,29 @@
   const TAP_SLOP = 10; // px a touch may move and still count as a tap
   const PAUSE_KEY = "life-paused";
 
+  // Gravitational lensing around the mouse pointer.
+  const LENS_RADIUS = 210; // px around the pointer where the spacetime grid shows
+  const LENS_SIGMA = 110; // px, width of the gravity well
+  const LENS_PULL = 0.32; // fraction of its distance a point right at the pointer is pulled in
+  const LENS_IDLE = 1400; // ms after the last move before the well fades away
+
+  // Black hole easter egg.
+  const SECRET = "hawking";
+  const HOLE_RADIUS = 4; // cells, at birth
+  const HOLE_LIFE = 14_000; // ms to evaporate; radius follows (1 - t/T)^(1/3), like a Hawking mass
+  const DISK_PARTICLES = 46;
+  const BURST_MS = 600;
+
   type Dir = { dx: 1 | -1; dy: 1 | -1 };
+  type Mass = { x: number; y: number; pull: number; sigma: number };
+  interface Hole {
+    col: number;
+    row: number;
+    born: number;
+    radius: number; // cells
+    disk: { r: number; a: number; size: number; tone: number }[];
+  }
+
   // Glider heading down-right as [col, row] offsets; mirrored for the other diagonals.
   const GLIDER: [number, number][] = [
     [1, 0],
@@ -42,6 +65,7 @@
 
   function init(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
     const motion = matchMedia("(prefers-reduced-motion: reduce)");
+    const finePointer = matchMedia("(hover: hover) and (pointer: fine)");
     let width = 0;
     let height = 0;
     let cols = 0;
@@ -57,6 +81,11 @@
     let drawing = false;
     let lastCol = 0;
     let lastRow = 0;
+    let pointer: { x: number; y: number } | null = null;
+    let lastMove = 0;
+    let lensLevel = 0; // eases toward 1 while the mouse moves, back to 0 when idle
+    let hole: Hole | null = null;
+    let burst: { x: number; y: number; start: number } | null = null;
 
     function readPaused() {
       try {
@@ -74,6 +103,8 @@
         edge: read("--fx-edge"),
         side: read("--fx-side"),
         strength: parseFloat(read("--life-strength")) || 0.4,
+        hot: [read("--color-brand-200"), read("--color-brand-300"), "#f3eff5"],
+        glow: read("--color-brand-600"),
       };
     }
 
@@ -101,12 +132,11 @@
       level = nextLevel;
     }
 
+    /** Index of a cell, wrapping around the edges. */
+    const at = (col: number, row: number) => ((row % rows) + rows) % rows * cols + (((col % cols) + cols) % cols);
+
     function place(col: number, row: number, dir: Dir) {
-      for (const [x, y] of GLIDER) {
-        const c = (col + (dir.dx === 1 ? x : 2 - x) + cols) % cols;
-        const r = (row + (dir.dy === 1 ? y : 2 - y) + rows) % rows;
-        cells[r * cols + c] = 1;
-      }
+      for (const [x, y] of GLIDER) cells[at(col + (dir.dx === 1 ? x : 2 - x), row + (dir.dy === 1 ? y : 2 - y))] = 1;
     }
 
     function restart() {
@@ -138,35 +168,216 @@
         }
       }
       cells = next;
+      if (hole) {
+        feedHole(hole);
+        stale = 0;
+        return;
+      }
       stale = changed ? 0 : stale + 1;
       if (population === 0 || stale >= STALE_TICKS) restart();
     }
 
-    /** Draws every square; returns true once all of them have finished fading. */
-    function render(ease: number) {
+    /** One generation of black hole physics on top of the Life rules. */
+    function feedHole({ col: hc, row: hr, radius }: Hole) {
+      const moves: [number, number][] = [];
+      for (let i = 0; i < cells.length; i++) {
+        if (!cells[i]) continue;
+        const c = i % cols;
+        const r = (i / cols) | 0;
+        const vx = hc - c;
+        const vy = hr - r;
+        const d = Math.hypot(vx, vy);
+        if (d < radius) {
+          cells[i] = 0; // past the event horizon
+        } else if (d < radius * 2.6 && Math.random() < 0.35) {
+          // Fall in along a spiral: toward the hole plus an orbital (sideways) component.
+          const tx = vx / d - (vy / d) * 0.9;
+          const ty = vy / d + (vx / d) * 0.9;
+          moves.push([i, at(c + Math.sign(Math.round(tx)), r + Math.sign(Math.round(ty)))]);
+        }
+      }
+      for (const [from, to] of moves) {
+        if (cells[from] && !cells[to]) {
+          cells[from] = 0;
+          cells[to] = 1;
+        }
+      }
+      // Hawking radiation: single squares just outside the horizon, now and then an escaping glider.
+      if (Math.random() < 0.6) {
+        const a = Math.random() * Math.PI * 2;
+        const c = Math.round(hc + Math.cos(a) * (radius + 1.5));
+        const r = Math.round(hr + Math.sin(a) * (radius + 1.5));
+        if (Math.random() < 0.06) place(c, r, { dx: Math.cos(a) >= 0 ? 1 : -1, dy: Math.sin(a) >= 0 ? 1 : -1 });
+        else cells[at(c, r)] = 1;
+      }
+    }
+
+    function spawnHole() {
+      if (motion.matches || hole) return;
+      colors = readColors();
+      hole = {
+        col: Math.floor(width / 2 / CELL),
+        row: Math.floor(height / 2 / CELL),
+        born: performance.now(),
+        radius: HOLE_RADIUS,
+        disk: Array.from({ length: DISK_PARTICLES }, () => ({
+          r: 1.5 + Math.random() * 1.3, // in horizon radii
+          a: Math.random() * Math.PI * 2,
+          size: 3 + Math.round(Math.random() * 3),
+          tone: Math.random(),
+        })),
+      };
+      wake();
+    }
+
+    /** The black hole is gone: what is left escapes as four gliders, one per diagonal. */
+    function pop(h: Hole, now: number) {
+      hole = null;
+      for (const dx of [-1, 1] as const) {
+        for (const dy of [-1, 1] as const) place(h.col + (dx === 1 ? 2 : -4), h.row + (dy === 1 ? 2 : -4), { dx, dy });
+      }
+      burst = { x: (h.col + 0.5) * CELL, y: (h.row + 0.5) * CELL, start: now };
+    }
+
+    /** Where a point appears once bent toward the masses, and how squeezed it is there (0..1). */
+    function lens(x: number, y: number, masses: Mass[]): [number, number, number] {
+      let dx = 0;
+      let dy = 0;
+      let squeeze = 0;
+      for (const m of masses) {
+        const vx = m.x - x;
+        const vy = m.y - y;
+        const pull = m.pull * Math.exp(-(vx * vx + vy * vy) / (m.sigma * m.sigma));
+        dx += vx * pull;
+        dy += vy * pull;
+        squeeze += pull;
+      }
+      return [x + dx, y + dy, Math.min(0.9, squeeze)];
+    }
+
+    /** Faint spacetime grid around (cx, cy), bent by the masses and fading out with distance. */
+    function drawWell(cx: number, cy: number, radius: number, alpha: number, masses: Mass[]) {
+      const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+      gradient.addColorStop(0, colors.edge);
+      gradient.addColorStop(1, `${colors.edge}00`);
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      const c0 = Math.floor((cx - radius) / CELL);
+      const c1 = Math.ceil((cx + radius) / CELL);
+      const r0 = Math.floor((cy - radius) / CELL);
+      const r1 = Math.ceil((cy + radius) / CELL);
+      for (let c = c0; c <= c1; c++) {
+        for (let y = r0 * CELL; y <= r1 * CELL; y += 10) {
+          const [lx, ly] = lens(c * CELL, y, masses);
+          if (y === r0 * CELL) ctx.moveTo(lx, ly);
+          else ctx.lineTo(lx, ly);
+        }
+      }
+      for (let r = r0; r <= r1; r++) {
+        for (let x = c0 * CELL; x <= c1 * CELL; x += 10) {
+          const [lx, ly] = lens(x, r * CELL, masses);
+          if (x === c0 * CELL) ctx.moveTo(lx, ly);
+          else ctx.lineTo(lx, ly);
+        }
+      }
+      ctx.stroke();
+    }
+
+    function drawDisk(h: Hole, now: number, hx: number, hy: number, back: boolean) {
+      const radiusPx = h.radius * CELL;
+      const t = (now - h.born) / 1000;
+      const tilt = -0.35;
+      for (const p of h.disk) {
+        // Kepler: angular speed falls off as r^-1.5.
+        const angle = p.a + (1.8 / p.r ** 1.5) * t;
+        if (Math.sin(angle) < 0 !== back) continue; // back half behind the horizon, front half over it
+        const ex = Math.cos(angle) * p.r * radiusPx;
+        const ey = Math.sin(angle) * p.r * radiusPx * 0.32;
+        const x = hx + ex * Math.cos(tilt) - ey * Math.sin(tilt);
+        const y = hy + ex * Math.sin(tilt) + ey * Math.cos(tilt);
+        ctx.globalAlpha = 0.45 + 0.55 * Math.max(0, Math.cos(angle)); // Doppler: the approaching side is brighter
+        ctx.fillStyle = colors.hot[Math.floor(p.tone * colors.hot.length)];
+        ctx.fillRect(x - p.size / 2, y - p.size / 2, p.size, p.size);
+      }
+    }
+
+    /** Draws everything; returns true once nothing is moving anymore. */
+    function render(ease: number, now: number) {
       const size = CELL - GAP;
       let settled = true;
       ctx.clearRect(0, 0, width, height);
+
+      const masses: Mass[] = [];
+      if (pointer && lensLevel > 0.01) masses.push({ x: pointer.x, y: pointer.y, pull: LENS_PULL * lensLevel, sigma: LENS_SIGMA });
+      const hx = hole ? (hole.col + 0.5) * CELL : 0;
+      const hy = hole ? (hole.row + 0.5) * CELL : 0;
+      if (hole) masses.push({ x: hx, y: hy, pull: 0.55, sigma: hole.radius * CELL * 2.2 });
+
+      if (pointer && lensLevel > 0.01) drawWell(pointer.x, pointer.y, LENS_RADIUS, lensLevel * 0.5, masses);
+      if (hole) {
+        drawWell(hx, hy, hole.radius * CELL * 4, 0.6, masses);
+        drawDisk(hole, now, hx, hy, true);
+      }
+
       for (let i = 0; i < cells.length; i++) {
         level[i] += (cells[i] - level[i]) * ease;
         if (Math.abs(cells[i] - level[i]) > 0.01) settled = false;
         const k = level[i];
         if (k < 0.01) continue;
-        const left = (i % cols) * CELL + GAP / 2;
-        const top = Math.floor(i / cols) * CELL + GAP / 2;
+        let left = (i % cols) * CELL + GAP / 2;
+        let top = Math.floor(i / cols) * CELL + GAP / 2;
+        let s = size;
+        if (masses.length) {
+          const [cx, cy, squeeze] = lens(left + size / 2, top + size / 2, masses);
+          s = size * (1 - squeeze * 0.7);
+          left = cx - s / 2;
+          top = cy - s / 2;
+        }
         const lift = k * LIFT;
         const alpha = k * colors.strength;
         // Shadow where the square sits, face lifted up-left: same raised tile as the rest of the site.
         ctx.globalAlpha = alpha * 0.9;
         ctx.fillStyle = colors.side;
-        ctx.fillRect(left, top, size, size);
+        ctx.fillRect(left, top, s, s);
         ctx.globalAlpha = alpha;
         ctx.fillStyle = colors.face;
-        ctx.fillRect(left - lift, top - lift, size, size);
+        ctx.fillRect(left - lift, top - lift, s, s);
         ctx.globalAlpha = Math.min(1, alpha * 1.8);
         ctx.strokeStyle = colors.edge;
-        ctx.strokeRect(left - lift + 0.5, top - lift + 0.5, size - 1, size - 1);
+        ctx.strokeRect(left - lift + 0.5, top - lift + 0.5, s - 1, s - 1);
       }
+
+      if (hole) {
+        const radiusPx = hole.radius * CELL;
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "#0b0a0c"; // event horizon: black in both themes
+        ctx.beginPath();
+        ctx.arc(hx, hy, radiusPx, 0, Math.PI * 2);
+        ctx.fill();
+        drawDisk(hole, now, hx, hy, false);
+        ctx.strokeStyle = colors.hot[0]; // photon ring
+        ctx.lineWidth = 2;
+        ctx.shadowColor = colors.glow;
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.arc(hx, hy, radiusPx * 1.06, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        settled = false;
+      }
+      if (burst) {
+        const t = (now - burst.start) / BURST_MS;
+        ctx.globalAlpha = Math.max(0, 1 - t);
+        ctx.strokeStyle = colors.hot[1];
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(burst.x, burst.y, t * CELL * 7, 0, Math.PI * 2);
+        ctx.stroke();
+        settled = false;
+      }
+      if (lensLevel > 0.01) settled = false;
       ctx.globalAlpha = 1;
       return settled;
     }
@@ -175,12 +386,20 @@
       // rAF stops in hidden tabs; on return this does a single step, not a catch-up burst.
       const dt = lastFrame ? now - lastFrame : 16;
       lastFrame = now;
+      const lensTarget = pointer && now - lastMove < LENS_IDLE ? 1 : 0;
+      lensLevel += (lensTarget - lensLevel) * Math.min(1, dt / 250);
+      if (lensLevel < 0.01 && !lensTarget) lensLevel = 0;
+      if (hole) {
+        hole.radius = HOLE_RADIUS * Math.cbrt(Math.max(0, 1 - (now - hole.born) / HOLE_LIFE));
+        if (hole.radius < 0.6) pop(hole, now);
+      }
+      if (burst && now - burst.start > BURST_MS) burst = null;
       if (!userPaused && !drawing && now - lastTick >= TICK) {
         step();
         lastTick = now;
       }
-      const settled = render(Math.min(1, dt / FADE));
-      // Paused with nothing left to fade: stop requesting frames until something wakes us up.
+      const settled = render(Math.min(1, dt / FADE), now);
+      // Paused with nothing left to animate: stop requesting frames until something wakes us up.
       if (userPaused && !drawing && settled) {
         frame = 0;
         return;
@@ -190,7 +409,7 @@
 
     /** Redraw after a change: restarts the loop if it went idle (or draws once with reduced motion). */
     function wake() {
-      if (motion.matches) render(1);
+      if (motion.matches) render(1, performance.now());
       else if (!frame) {
         lastFrame = 0;
         frame = requestAnimationFrame(loop);
@@ -199,11 +418,12 @@
 
     function start() {
       cancelAnimationFrame(frame);
-      if (motion.matches) {
-        render(1); // reduced motion: the current pattern, drawn once, standing still
-        return;
-      }
       frame = 0;
+      if (motion.matches) {
+        hole = null;
+        pointer = null;
+        lensLevel = 0;
+      }
       lastTick = performance.now();
       wake();
     }
@@ -293,7 +513,14 @@
     });
     window.addEventListener("pointermove", (event) => {
       if (drawing) drawTo(event.clientX, event.clientY);
+      // The lensing well follows the mouse (not touch: there is no hovering pointer to follow).
+      if (event.pointerType === "mouse" && finePointer.matches && !motion.matches) {
+        pointer = { x: event.clientX, y: event.clientY };
+        lastMove = performance.now();
+        wake();
+      }
     });
+    document.documentElement.addEventListener("pointerleave", () => (pointer = null));
     window.addEventListener("pointerup", (event) => {
       // Touch: a tap adds one square. A drag that scrolled the page ends in pointercancel instead.
       if (event.pointerType === "touch" && tapStart) {
@@ -310,7 +537,10 @@
       tapStart = null;
       stopDrawing();
     });
-    window.addEventListener("blur", stopDrawing);
+    window.addEventListener("blur", () => {
+      pointer = null;
+      stopDrawing();
+    });
     document.addEventListener("background-pause", (event) => {
       userPaused = (event as CustomEvent<{ paused: boolean }>).detail.paused;
       lastTick = performance.now(); // on resume, the next generation comes one tick later
@@ -320,6 +550,19 @@
       const { x, y, dx, dy } = (event as CustomEvent<{ x: number; y: number } & Partial<Dir>>).detail;
       poke(x, y, { dx, dy });
     });
+
+    // Easter egg: type the secret anywhere outside a text field.
+    let typed = "";
+    document.addEventListener("keydown", (event) => {
+      if (event.ctrlKey || event.metaKey || event.altKey || event.key.length !== 1) return;
+      if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable]")) return;
+      typed = (typed + event.key.toLowerCase()).slice(-SECRET.length);
+      if (typed === SECRET) {
+        typed = "";
+        spawnHole();
+      }
+    });
+    console.info(`%cpsst: type "${SECRET}" anywhere on this page.`, "color: #b55ac4");
 
     resize();
     restart();
