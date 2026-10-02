@@ -2,4 +2,4 @@ Je suis basé à Nancy. J’ai commencé à programmer en seconde, en écrivant 
 
 Aujourd’hui, ce qui m’intéresse le plus, c’est le développement bas niveau et l’embarqué : écrire du code proche de la machine, surtout en C et en C++. J’apprends maintenant Rust.
 
-En dehors du code, je fais de l’escalade depuis 8 ans, je suis passionné d’astrophysique, et je suis assistant chef de troupe chez les scouts de l’AGSE (Vᵉ Nautique Nancy), certifié CEP1.
+En dehors du code, je fais de l’escalade depuis 8 ans, je suis passionné d’astrophysique et j’adore les jeux vidéo (en ce moment : *Dragon Quest Builders 2* et *ULTRAKILL*). Je suis aussi assistant chef de troupe (ACT) chez les scouts de l’AGSE (Vᵉ Nautique Nancy) pour la deuxième année, certifié CEP1.

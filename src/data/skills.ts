@@ -15,11 +15,15 @@ export const skillGroups: { title: Localized; items: Localized[] }[] = [
   },
 ];
 
-export const spokenLanguages: { name: Localized; level: Localized }[] = [
+export const spokenLanguages: { name: Localized; level: Localized; duolingo?: string }[] = [
   { name: { fr: "Français", en: "French" }, level: { fr: "Langue maternelle", en: "Native" } },
   {
     name: { fr: "Anglais", en: "English" },
     level: { fr: "870/990 au TEPitech (équivalent TOEIC)", en: "870/990 on the TEPitech (TOEIC equivalent)" },
   },
-  { name: { fr: "Japonais", en: "Japanese" }, level: { fr: "Notions (3 ans)", en: "Basics (3 years)" } },
+  {
+    name: { fr: "Japonais", en: "Japanese" },
+    level: { fr: "Notions (3 ans)", en: "Basics (3 years)" },
+    duolingo: "ja",
+  },
 ];

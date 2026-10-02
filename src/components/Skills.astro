@@ -1,5 +1,7 @@
 ---
 import { skillGroups, spokenLanguages } from "../data/skills";
+import { getDuolingoStats } from "../lib/duolingo";
+import { site } from "../site.config";
 import { l, useTranslations, type Lang } from "../i18n/ui";
 
 interface Props {
@@ -9,6 +11,22 @@ interface Props {
 const { lang } = Astro.props;
 const t = useTranslations(lang);
 const languagesTitle = lang === "fr" ? "Langues" : "Languages";
+const number = new Intl.NumberFormat(lang);
+
+const languages = await Promise.all(
+  spokenLanguages.map(async (language) => {
+    const stats = language.duolingo ? await getDuolingoStats(site.duolingo.username, language.duolingo) : null;
+    if (!stats) return { ...language, duolingo: null };
+    const parts = [t("duolingo.xp").replace("{xp}", number.format(stats.xp))];
+    if (stats.streak > 0) {
+      parts.push(stats.streak === 1 ? t("duolingo.streakOne") : t("duolingo.streak").replace("{n}", number.format(stats.streak)));
+    }
+    return {
+      ...language,
+      duolingo: { text: parts.join(", "), url: `https://www.duolingo.com/profile/${stats.username}` },
+    };
+  }),
+);
 ---
 
 <section id="skills" class="scroll-mt-16 border-t border-line py-20 md:py-28">
@@ -31,10 +49,20 @@ const languagesTitle = lang === "fr" ? "Langues" : "Languages";
       <h3 class="text-sm font-medium text-muted">{languagesTitle}</h3>
       <dl class="mt-4 space-y-2">
         {
-          spokenLanguages.map((language) => (
+          languages.map((language) => (
             <div class="flex flex-wrap gap-x-3">
               <dt class="font-medium">{l(language.name, lang)}</dt>
               <dd class="text-muted">{l(language.level, lang)}</dd>
+              {language.duolingo && (
+                <dd class="w-full text-sm text-muted">
+                  <a
+                    href={language.duolingo.url}
+                    class="underline decoration-line underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
+                  >
+                    {language.duolingo.text}
+                  </a>
+                </dd>
+              )}
             </div>
           ))
         }

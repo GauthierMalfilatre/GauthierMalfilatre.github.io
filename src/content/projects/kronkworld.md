@@ -1,11 +1,11 @@
 ---
 title: KronkWorld
 description:
-  fr: Entity Component System (ECS) léger et header-only en C++, conçu pour mes projets Epitech.
-  en: Lightweight, header-only Entity Component System (ECS) in C++, built for my Epitech projects.
+  fr: Bibliothèque Entity Component System (ECS) légère en C++, compilée avec CMake, conçue pour mes projets Epitech.
+  en: Lightweight Entity Component System (ECS) library in C++, built with CMake, made for my Epitech projects.
 context: personal
 team: 1
-tags: [C++, ECS]
+tags: [C++, CMake, ECS]
 links:
   - url: https://github.com/kronkorp/kronkworld
 order: 2

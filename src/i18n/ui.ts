@@ -26,6 +26,9 @@ const fr = {
   "journey.experience": "Expérience",
   "journey.education": "Formation",
   "contact.title": "Un stage à proposer ? Parlons-en.",
+  "duolingo.xp": "Duolingo : {xp} XP",
+  "duolingo.streak": "série de {n} jours",
+  "duolingo.streakOne": "série de 1 jour",
   "footer.built": "Site construit avec Astro.",
 };
 
@@ -48,6 +51,9 @@ const en: Record<keyof typeof fr, string> = {
   "journey.experience": "Experience",
   "journey.education": "Education",
   "contact.title": "Have an internship to offer? Let’s talk.",
+  "duolingo.xp": "Duolingo: {xp} XP",
+  "duolingo.streak": "{n}-day streak",
+  "duolingo.streakOne": "1-day streak",
   "footer.built": "Built with Astro.",
 };
 

@@ -10,6 +10,9 @@ export const site = {
   github: "https://github.com/GauthierMalfilatre",
   linkedin: "https://www.linkedin.com/in/gauthier-malfilatre-648001339/",
 
+  // Duolingo stats are fetched at build time; leave username empty to hide them.
+  duolingo: { username: "gzzutier" },
+
   // CV per language, served from public/cv/. An empty value falls back to the French CV.
   cv: { fr: "/cv/gauthier-malfilatre-cv-fr.pdf", en: "" },
 
