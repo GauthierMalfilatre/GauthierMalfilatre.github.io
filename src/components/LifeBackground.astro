@@ -5,6 +5,8 @@
 // the pointer to life; dragging fills every square passed over; releasing resumes. On touch
 // screens a tap adds one square (dragging still scrolls). Any script can drop a glider with
 // document.dispatchEvent(new CustomEvent("background-poke", { detail: { x, y, dx?, dy? } })).
+// The header's pause button sends "background-pause" ({ paused }) and stores the choice in
+// localStorage ("life-paused"); while paused and settled, no frames are requested at all.
 // If everything dies or freezes into still lifes, it restarts from one glider.
 // Pauses with the tab (requestAnimationFrame); static single glider with reduced motion.
 // Colors come from the --fx-* and --life-strength variables in global.css.
@@ -26,6 +28,7 @@
   const NOT_BACKGROUND =
     "a, button, input, textarea, select, label, summary, [role='button'], p, h1, h2, h3, h4, h5, h6, li, dl, pre, img, svg";
   const TAP_SLOP = 10; // px a touch may move and still count as a tap
+  const PAUSE_KEY = "life-paused";
 
   type Dir = { dx: 1 | -1; dy: 1 | -1 };
   // Glider heading down-right as [col, row] offsets; mirrored for the other diagonals.
@@ -50,10 +53,18 @@
     let lastTick = 0;
     let lastFrame = 0;
     let stale = 0;
-    let paused = false; // while drawing
+    let userPaused = readPaused(); // pause button in the header
     let drawing = false;
     let lastCol = 0;
     let lastRow = 0;
+
+    function readPaused() {
+      try {
+        return localStorage.getItem(PAUSE_KEY) === "1";
+      } catch {
+        return false;
+      }
+    }
 
     function readColors() {
       const style = getComputedStyle(document.documentElement);
@@ -131,11 +142,14 @@
       if (population === 0 || stale >= STALE_TICKS) restart();
     }
 
+    /** Draws every square; returns true once all of them have finished fading. */
     function render(ease: number) {
       const size = CELL - GAP;
+      let settled = true;
       ctx.clearRect(0, 0, width, height);
       for (let i = 0; i < cells.length; i++) {
         level[i] += (cells[i] - level[i]) * ease;
+        if (Math.abs(cells[i] - level[i]) > 0.01) settled = false;
         const k = level[i];
         if (k < 0.01) continue;
         const left = (i % cols) * CELL + GAP / 2;
@@ -154,18 +168,33 @@
         ctx.strokeRect(left - lift + 0.5, top - lift + 0.5, size - 1, size - 1);
       }
       ctx.globalAlpha = 1;
+      return settled;
     }
 
     function loop(now: number) {
       // rAF stops in hidden tabs; on return this does a single step, not a catch-up burst.
       const dt = lastFrame ? now - lastFrame : 16;
       lastFrame = now;
-      if (!paused && now - lastTick >= TICK) {
+      if (!userPaused && !drawing && now - lastTick >= TICK) {
         step();
         lastTick = now;
       }
-      render(Math.min(1, dt / FADE));
+      const settled = render(Math.min(1, dt / FADE));
+      // Paused with nothing left to fade: stop requesting frames until something wakes us up.
+      if (userPaused && !drawing && settled) {
+        frame = 0;
+        return;
+      }
       frame = requestAnimationFrame(loop);
+    }
+
+    /** Redraw after a change: restarts the loop if it went idle (or draws once with reduced motion). */
+    function wake() {
+      if (motion.matches) render(1);
+      else if (!frame) {
+        lastFrame = 0;
+        frame = requestAnimationFrame(loop);
+      }
     }
 
     function start() {
@@ -174,9 +203,9 @@
         render(1); // reduced motion: the current pattern, drawn once, standing still
         return;
       }
-      lastFrame = 0;
+      frame = 0;
       lastTick = performance.now();
-      frame = requestAnimationFrame(loop);
+      wake();
     }
 
     function poke(x: number, y: number, dir?: Partial<Dir>) {
@@ -184,6 +213,7 @@
       colors = readColors(); // the theme may have just changed
       const random = () => (Math.random() < 0.5 ? 1 : -1);
       place(Math.floor(x / CELL), Math.floor(y / CELL), { dx: dir?.dx ?? random(), dy: dir?.dy ?? random() });
+      wake();
     }
 
     function setCell(col: number, row: number) {
@@ -224,7 +254,6 @@
     function stopDrawing() {
       if (!drawing) return;
       drawing = false;
-      paused = false;
       stale = 0;
       lastTick = performance.now(); // the first generation comes one tick after release
       document.documentElement.style.userSelect = "";
@@ -235,16 +264,16 @@
       clearTimeout(resizeTimer);
       resizeTimer = window.setTimeout(() => {
         resize();
-        if (motion.matches) render(1);
+        wake();
       }, 150);
     });
     motion.addEventListener("change", start);
     matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
       colors = readColors();
-      if (motion.matches) render(1);
+      wake();
     });
 
-    // Mouse and pen: press to pause and draw, drag to fill, release to resume.
+    // Mouse and pen: press to hold the simulation and draw, drag to fill, release to resume.
     let tapStart: { x: number; y: number } | null = null;
     document.addEventListener("pointerdown", (event) => {
       if (motion.matches || event.button !== 0 || !isBackground(event.target)) return;
@@ -257,10 +286,10 @@
       document.documentElement.style.userSelect = "none";
       colors = readColors();
       drawing = true;
-      paused = true;
       lastCol = Math.floor(event.clientX / CELL);
       lastRow = Math.floor(event.clientY / CELL);
       drawTo(event.clientX, event.clientY);
+      wake();
     });
     window.addEventListener("pointermove", (event) => {
       if (drawing) drawTo(event.clientX, event.clientY);
@@ -271,6 +300,7 @@
         if (Math.hypot(event.clientX - tapStart.x, event.clientY - tapStart.y) <= TAP_SLOP) {
           colors = readColors();
           setCell(Math.floor(event.clientX / CELL), Math.floor(event.clientY / CELL));
+          wake();
         }
         tapStart = null;
       }
@@ -281,6 +311,11 @@
       stopDrawing();
     });
     window.addEventListener("blur", stopDrawing);
+    document.addEventListener("background-pause", (event) => {
+      userPaused = (event as CustomEvent<{ paused: boolean }>).detail.paused;
+      lastTick = performance.now(); // on resume, the next generation comes one tick later
+      wake();
+    });
     document.addEventListener("background-poke", (event) => {
       const { x, y, dx, dy } = (event as CustomEvent<{ x: number; y: number } & Partial<Dir>>).detail;
       poke(x, y, { dx, dy });
