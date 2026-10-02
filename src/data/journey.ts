@@ -13,6 +13,8 @@ export interface Entry {
   /** One or more periods, oldest first. */
   periods: Period[];
   summary: Localized;
+  /** Small, low-key detail shown after the organization (e.g. a GPA). */
+  note?: Localized;
   highlight?: Localized;
   tags?: string[];
 }
@@ -65,6 +67,7 @@ export const education: Entry[] = [
     org: "Epitech",
     location: "Nancy",
     periods: [{ start: "2024", end: "2029" }],
+    note: "GPA 3.65",
     summary: {
       fr: "Diplôme d’expert en technologies de l’information (RNCP niveau 7). Pédagogie par projets, orientée développement bas niveau. Actuellement en 3e année.",
       en: "Information technology expert degree (RNCP level 7, Master’s equivalent). Project-based learning with a focus on low-level development. Currently in 3rd year.",
