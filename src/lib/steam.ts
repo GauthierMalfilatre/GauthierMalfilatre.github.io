@@ -31,7 +31,11 @@ async function call<T>(
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (res.ok) return (await res.json()) as T;
-    if (res.status === 403 && path.includes("Achievements")) {
+    // Steam answers 403 both for a rejected key (HTML page) and for private game details (JSON).
+    const body = res.status === 403 ? await res.text() : "";
+    if (body.includes("verify your")) {
+      warn("STEAM_API_KEY was rejected by Steam: check the key (local .env or GitHub secret)");
+    } else if (body.includes("not public")) {
       warn("achievements hidden: set “Game details” to Public in your Steam privacy settings");
     } else if (!quietStatuses.includes(res.status)) {
       warn(`${path}: HTTP ${res.status}`);
