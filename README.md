@@ -17,8 +17,15 @@ npm run preview  # serve the production build locally
 
 ## Edit content
 
-- **Name, tagline, links:** `src/site.config.ts`
-- **Projects:** one Markdown file per project in `src/content/projects/` (frontmatter schema in `src/content.config.ts`)
+The site is bilingual: French at `/`, English at `/en/`. Most text is written as `{ fr: "...", en: "..." }`.
+
+- **Name, tagline, links, CV paths:** `src/site.config.ts`
+- **Bio:** `src/content/about/fr.md` and `en.md`
+- **Projects:** one Markdown file per project in `src/content/projects/` (schema in `src/content.config.ts`)
+- **Experience and education:** `src/data/journey.ts`
+- **Skills and spoken languages:** `src/data/skills.ts`
+- **Interface labels:** `src/i18n/ui.ts`
+- **CV files:** `public/cv/`. Set `cv.en` in `src/site.config.ts` once an English CV exists.
 - **Colors and fonts:** tokens at the top of `src/styles/global.css`
 
 ## Deploy

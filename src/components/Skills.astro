@@ -1,0 +1,44 @@
+---
+import { skillGroups, spokenLanguages } from "../data/skills";
+import { l, useTranslations, type Lang } from "../i18n/ui";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const languagesTitle = lang === "fr" ? "Langues" : "Languages";
+---
+
+<section id="skills" class="scroll-mt-16 border-t border-line py-20 md:py-28">
+  <h2 class="text-2xl font-semibold tracking-tight md:text-3xl">{t("nav.skills")}</h2>
+
+  <div class="mt-10 grid gap-4 md:grid-cols-2">
+    {
+      skillGroups.map((group, i) => (
+        <div class:list={["rounded-xl p-6", i === 0 ? "bg-accent/10" : "bg-surface"]}>
+          <h3 class="text-sm font-medium text-muted">{l(group.title, lang)}</h3>
+          <ul class="mt-4 flex flex-wrap gap-2">
+            {group.items.map((item) => (
+              <li class="rounded-lg bg-bg px-2.5 py-1 font-mono text-sm ring-1 ring-line">{l(item, lang)}</li>
+            ))}
+          </ul>
+        </div>
+      ))
+    }
+    <div class="rounded-xl bg-surface p-6">
+      <h3 class="text-sm font-medium text-muted">{languagesTitle}</h3>
+      <dl class="mt-4 space-y-2">
+        {
+          spokenLanguages.map((language) => (
+            <div class="flex flex-wrap gap-x-3">
+              <dt class="font-medium">{l(language.name, lang)}</dt>
+              <dd class="text-muted">{l(language.level, lang)}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </div>
+</section>

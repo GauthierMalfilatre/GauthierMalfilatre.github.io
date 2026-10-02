@@ -1,6 +1,21 @@
 @import "tailwindcss";
 
-/* Color tokens: one neutral scale + one accent. Dark values are swapped in below. */
+/*
+ * Theme: follows the OS by default; the header toggle pins light or dark via
+ * <html data-theme="...">, persisted in localStorage.
+ * Radius scale: rounded-xl for buttons, images and panels; rounded-lg for chips.
+ */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
+
 @theme {
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono Variable", ui-monospace, monospace;
@@ -10,17 +25,34 @@
   --color-fg: #18181b;
   --color-muted: #52525b;
   --color-line: #e4e4e7;
-  --color-accent: #047857;
+  --color-accent: #7e008d;
+}
+
+:root {
+  color-scheme: light;
+}
+
+/* Dark tokens, applied in both dark cases (pinned, or following the OS). Keep the two blocks in sync. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #0c0c0e;
+  --color-surface: #18181b;
+  --color-fg: #f4f4f5;
+  --color-muted: #a1a1aa;
+  --color-line: #27272a;
+  /* #7e008d is too dark to read on the dark background; same hue, lighter. */
+  --color-accent: #d77ee3;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --color-bg: #0c0c0e;
     --color-surface: #18181b;
     --color-fg: #f4f4f5;
     --color-muted: #a1a1aa;
     --color-line: #27272a;
-    --color-accent: #34d399;
+    --color-accent: #d77ee3;
   }
 }
 

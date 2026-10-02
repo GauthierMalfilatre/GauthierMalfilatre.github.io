@@ -1,32 +1,58 @@
 ---
+import { getAbsoluteLocaleUrl } from "astro:i18n";
 import "@fontsource-variable/geist";
 import "@fontsource-variable/geist-mono";
 import "../styles/global.css";
 import { site } from "../site.config";
+import { l, languages, type Lang } from "../i18n/ui";
 
 interface Props {
+  lang: Lang;
   title?: string;
   description?: string;
+  /** Emit hreflang links to the other language's home page. */
+  alternates?: boolean;
 }
 
-const { title = `${site.name} | ${site.role}`, description = site.tagline } = Astro.props;
+const {
+  lang,
+  title = `${site.name} | ${l(site.role, lang)}`,
+  description = l(site.tagline, lang),
+  alternates = true,
+} = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
+    <script is:inline>
+      // Apply the saved theme before first paint to avoid a flash.
+      try {
+        const theme = localStorage.getItem("theme");
+        if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+      } catch {}
+    </script>
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+    {
+      alternates &&
+        Object.keys(languages).map((code) => (
+          <link rel="alternate" hreflang={code} href={getAbsoluteLocaleUrl(code)} />
+        ))
+    }
+    {alternates && <link rel="alternate" hreflang="x-default" href={getAbsoluteLocaleUrl("fr")} />}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content={lang === "fr" ? "fr_FR" : "en_US"} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={site.avatar} />
   </head>
   <body class="min-h-dvh bg-bg font-sans text-fg antialiased">
     <slot />

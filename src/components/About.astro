@@ -1,0 +1,20 @@
+---
+import { getEntry, render } from "astro:content";
+import { useTranslations, type Lang } from "../i18n/ui";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const entry = await getEntry("about", lang);
+const { Content } = entry ? await render(entry) : { Content: null };
+---
+
+<section id="about" class="scroll-mt-16 border-t border-line py-20 md:py-28">
+  <h2 class="text-2xl font-semibold tracking-tight md:text-3xl">{t("nav.about")}</h2>
+  <div class="mt-8 max-w-[65ch] space-y-5 text-lg leading-relaxed text-muted [&_strong]:text-fg">
+    {Content && <Content />}
+  </div>
+</section>

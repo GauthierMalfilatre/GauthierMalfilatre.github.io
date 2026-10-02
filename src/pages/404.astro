@@ -3,15 +3,25 @@ import Base from "../layouts/Base.astro";
 import { site } from "../site.config";
 ---
 
-<Base title={`Page not found | ${site.name}`}>
+<Base lang="fr" title={`Page introuvable | ${site.name}`} alternates={false}>
   <main class="mx-auto flex min-h-dvh max-w-5xl flex-col justify-center px-4 md:px-8">
     <p class="font-mono text-sm text-muted">404</p>
-    <h1 class="mt-3 text-4xl font-semibold tracking-tighter md:text-6xl">Page not found</h1>
-    <a
-      href="/"
-      class="mt-8 w-fit rounded-xl bg-fg px-5 py-2.5 text-sm font-medium text-bg transition-transform active:scale-[0.98]"
-    >
-      Back home
-    </a>
+    <h1 class="mt-3 text-4xl font-semibold tracking-tighter md:text-6xl">Page introuvable</h1>
+    <p class="mt-3 text-lg text-muted" lang="en">Page not found</p>
+    <div class="mt-8 flex flex-wrap gap-3">
+      <a
+        href="/"
+        class="rounded-xl bg-accent px-5 py-2.5 text-sm font-medium text-bg transition-transform active:scale-[0.98]"
+      >
+        Retour à l’accueil
+      </a>
+      <a
+        href="/en/"
+        lang="en"
+        class="rounded-xl px-5 py-2.5 text-sm font-medium ring-1 ring-line transition-colors hover:bg-surface active:scale-[0.98]"
+      >
+        English version
+      </a>
+    </div>
   </main>
 </Base>

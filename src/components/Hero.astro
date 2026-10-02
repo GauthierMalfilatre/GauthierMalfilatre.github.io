@@ -1,0 +1,55 @@
+---
+import Icon from "./Icon.astro";
+import { site } from "../site.config";
+import { l, useTranslations, type Lang } from "../i18n/ui";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const cv = site.cv[lang] || site.cv.fr;
+const cvIsFallback = !site.cv[lang];
+---
+
+<section class="grid items-center gap-8 pt-10 pb-20 md:grid-cols-[1fr_auto] md:gap-16 md:pt-24 md:pb-28">
+  <div>
+    <p class="reveal flex items-center gap-2 text-sm text-muted">
+      <span class="size-2 rounded-full bg-accent"></span>
+      {l(site.availability, lang)}
+    </p>
+    <h1 class="reveal mt-4 text-4xl leading-[1.05] font-semibold tracking-tighter md:text-6xl" style="--i: 1">
+      {site.name}
+    </h1>
+    <p class="reveal mt-5 max-w-[50ch] text-lg leading-relaxed text-muted" style="--i: 2">
+      {l(site.tagline, lang)}
+    </p>
+    <div class="reveal mt-8 flex flex-wrap gap-3" style="--i: 3">
+      <a
+        href={cv}
+        download
+        hreflang={cvIsFallback ? "fr" : undefined}
+        type="application/pdf"
+        class="inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-medium text-bg transition-transform active:scale-[0.98]"
+      >
+        <Icon name="download-simple" />
+        {t(cvIsFallback ? "cta.cvFallback" : "cta.cv")}
+      </a>
+      <a
+        href="#contact"
+        class="rounded-xl px-5 py-2.5 text-sm font-medium ring-1 ring-line transition-colors hover:bg-surface active:scale-[0.98]"
+      >
+        {t("cta.contact")}
+      </a>
+    </div>
+  </div>
+  <img
+    src={site.avatar}
+    alt={site.name}
+    width="224"
+    height="224"
+    class="reveal order-first size-24 rounded-xl object-cover ring-1 ring-line md:order-none md:size-56"
+    style="--i: 1"
+  />
+</section>

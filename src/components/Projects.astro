@@ -1,0 +1,52 @@
+---
+import { getCollection } from "astro:content";
+import Icon from "./Icon.astro";
+import { l, useTranslations, type Lang } from "../i18n/ui";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const projects = (await getCollection("projects")).sort((a, b) => a.data.order - b.data.order);
+---
+
+<section id="projects" class="scroll-mt-16 border-t border-line py-20 md:py-28">
+  <h2 class="text-2xl font-semibold tracking-tight md:text-3xl">{t("nav.projects")}</h2>
+
+  <ul class="mt-10 grid gap-x-12 gap-y-12 md:grid-cols-2">
+    {
+      projects.map(({ data }) => (
+        <li class="flex flex-col border-t border-line pt-6">
+          <h3 class="text-lg font-medium">{data.title}</h3>
+          <p class="mt-1 text-sm text-muted">
+            {t(data.context === "personal" ? "projects.personal" : "projects.school")} ·{" "}
+            {data.team === 1 ? t("projects.solo") : t("projects.team").replace("{n}", String(data.team))}
+          </p>
+          <p class="mt-4 max-w-[60ch] leading-relaxed text-muted">{l(data.description, lang)}</p>
+          <div class="mt-auto flex flex-wrap items-center justify-between gap-x-6 gap-y-3 pt-5">
+            <ul class="flex flex-wrap gap-2">
+              {data.tags.map((tag) => (
+                <li class="rounded-lg px-2 py-0.5 font-mono text-xs text-muted ring-1 ring-line">{tag}</li>
+              ))}
+            </ul>
+            {data.links.length > 0 && (
+              <div class="flex gap-4 text-sm">
+                {data.links.map((link) => (
+                  <a
+                    href={link.url}
+                    class="inline-flex items-center gap-1 font-medium transition-colors hover:text-accent"
+                  >
+                    {link.label ? l(link.label, lang) : t("projects.link")}
+                    <Icon name="arrow-up-right" class="size-3.5" />
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+</section>
