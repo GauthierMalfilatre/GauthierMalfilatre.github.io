@@ -1,14 +1,22 @@
-// Shown when Steam stats are unavailable (no API key or profile set, or the Steam API is down).
-// With both set, the section lists your most recently played Steam games instead.
-export const fallbackGames: { appid: number; name: string }[] = [
-  { appid: 1072420, name: "Dragon Quest Builders 2" },
-  { appid: 1229490, name: "ULTRAKILL" },
-];
+export interface GameEntry {
+  name: string;
+  /** Steam app id, used for the cover art (and the store link if `url` is not set). */
+  steamAppId?: number;
+  /** You play it on Steam: shows your achievements (needs STEAM_API_KEY and a public "Game details" setting). */
+  onSteam?: boolean;
+  /** Link for the card. Defaults to the Steam store page. */
+  url?: string;
+  /** Cover image for games without a Steam page: a portrait 2:3 image (e.g. 600x900) in public/games/. */
+  cover?: string;
+}
 
-/** Steam apps never shown, by app id (tools, not games). Find an id in its store URL. */
-export const hiddenApps: number[] = [
-  431960, // Wallpaper Engine
+// Shown in this order.
+export const games: GameEntry[] = [
+  { name: "THE FINALS", steamAppId: 2073850, onSteam: true },
+  { name: "Dragon Quest Builders 2", steamAppId: 1072420, onSteam: true },
+  { name: "ULTRAKILL", steamAppId: 1229490, onSteam: true },
+  { name: "Vampire Survivors", steamAppId: 1794680, onSteam: true },
+  { name: "Wuthering Waves", steamAppId: 3513350, url: "https://wutheringwaves.kurogames.com/" },
+  // Not on Steam. Add cover: "/games/honkai-star-rail.jpg" once the image is in public/games/.
+  { name: "Honkai: Star Rail", url: "https://hsr.hoyoverse.com/" },
 ];
-
-/** How many recently played games to show. */
-export const recentGamesLimit = 5;

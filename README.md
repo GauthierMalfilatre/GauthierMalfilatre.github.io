@@ -26,7 +26,7 @@ The site is bilingual: French at `/`, English at `/en/`. Most text is written as
 - **Skills and spoken languages:** `src/data/skills.ts`
 - **Interface labels:** `src/i18n/ui.ts`
 - **CV files:** `public/cv/`. Set `cv.en` in `src/site.config.ts` once an English CV exists.
-- **Video games fallback list:** `src/data/games.ts`
+- **Video games:** `src/data/games.ts`
 - **Colors and fonts:** tokens at the top of `src/styles/global.css`
 
 ## Live data
@@ -34,14 +34,14 @@ The site is bilingual: French at `/`, English at `/en/`. Most text is written as
 Fetched at build time; the site rebuilds daily to keep it fresh. If a source fails, its part is hidden or falls back, and the build still succeeds.
 
 - **Duolingo:** set `duolingo.username` in `src/site.config.ts`. No key needed.
-- **Steam** (recently played games, hours, achievements):
+- **Steam** (cover art needs nothing; your achievements need a key):
   1. Get a key at https://steamcommunity.com/dev/apikey (domain: `gauthiermalfilatre.github.io`).
   2. In Steam, set **Edit Profile > Privacy Settings > Game details** to **Public**.
   3. Set `steam.profile` in `src/site.config.ts` to your profile URL.
   4. Locally: put `STEAM_API_KEY=your-key` in a `.env` file (git-ignored).
   5. On GitHub: add a repository secret named `STEAM_API_KEY` (Settings > Secrets and variables > Actions), or run `gh secret set STEAM_API_KEY`.
 
-  Without a key, the section shows the games in `src/data/games.ts` without stats.
+  Without a key, the cards show cover art without achievements.
 
 ## Deploy
 

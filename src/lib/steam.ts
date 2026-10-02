@@ -1,27 +1,18 @@
 // Steam data, fetched at build time. The Web API key stays on the build machine:
 // only the derived numbers end up in the generated HTML.
-// Every failure degrades to the fallback list so Steam never breaks the build.
+// Every failure just drops that piece of data, so Steam never breaks the build.
 import { STEAM_API_KEY } from "astro:env/server";
-import { fallbackGames, hiddenApps, recentGamesLimit } from "../data/games";
+import { games, type GameEntry } from "../data/games";
 
 export interface Game {
-  appid: number;
   name: string;
+  url: string | null;
   cover: string | null;
-  /** Total playtime in minutes; null when stats are unavailable. */
-  minutes: number | null;
   achievements: { unlocked: number; total: number } | null;
 }
 
-interface OwnedGame {
-  appid: number;
-  name: string;
-  playtime_forever: number;
-  rtime_last_played: number;
-}
-
 const API = "https://api.steampowered.com";
-const CDN = "https://cdn.cloudflare.steamstatic.com/steam/apps";
+const ASSETS = "https://shared.steamstatic.com/store_item_assets";
 
 const warned = new Set<string>();
 function warn(message: string) {
@@ -32,10 +23,10 @@ function warn(message: string) {
 async function call<T>(
   path: string,
   params: Record<string, string | number>,
-  quietStatuses: number[] = [],
+  { withKey = true, quietStatuses = [] as number[] } = {},
 ): Promise<T | null> {
   const url = new URL(path, API);
-  url.searchParams.set("key", STEAM_API_KEY ?? "");
+  if (withKey) url.searchParams.set("key", STEAM_API_KEY ?? "");
   for (const [name, value] of Object.entries(params)) url.searchParams.set(name, String(value));
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
@@ -52,9 +43,6 @@ async function call<T>(
   return null;
 }
 
-/** "DRAGON QUEST BUILDERS™ 2" → "DRAGON QUEST BUILDERS 2" */
-const cleanName = (name: string) => name.replace(/[™®©]/g, "").replace(/\s+/g, " ").trim();
-
 async function resolveSteamId(profile: string): Promise<string | null> {
   const id = profile.match(/\b(\d{17})\b/)?.[1];
   if (id) return id;
@@ -66,74 +54,62 @@ async function resolveSteamId(profile: string): Promise<string | null> {
   return data?.response.steamid ?? null;
 }
 
-/** Portrait cover art, or the landscape header for older games without one. */
-async function getCover(appid: number): Promise<string | null> {
-  for (const file of ["library_600x900.jpg", "header.jpg"]) {
-    const url = `${CDN}/${appid}/${file}`;
-    try {
-      if ((await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(5000) })).ok) return url;
-    } catch {}
+/** Portrait cover art by app id. Public store data, no key needed; asset URLs are hashed, so ask the store. */
+async function getCovers(appids: number[]): Promise<Map<number, string>> {
+  const covers = new Map<number, string>();
+  if (!appids.length) return covers;
+  const data = await call<{
+    response: { store_items?: { appid: number; assets?: { asset_url_format?: string; library_capsule?: string } }[] };
+  }>(
+    "/IStoreBrowseService/GetItems/v1/",
+    {
+      input_json: JSON.stringify({
+        ids: appids.map((appid) => ({ appid })),
+        context: { language: "english", country_code: "FR" },
+        data_request: { include_assets: true },
+      }),
+    },
+    { withKey: false },
+  );
+  for (const item of data?.response.store_items ?? []) {
+    const { asset_url_format: format, library_capsule: file } = item.assets ?? {};
+    if (format && file) covers.set(item.appid, `${ASSETS}/${format.replace("${FILENAME}", file)}`);
   }
-  return null;
+  return covers;
 }
 
 async function getAchievements(steamid: string, appid: number) {
-  // Games without achievements answer 400, which is expected.
+  // Games without achievements answer 400 or 500, which is expected.
   const data = await call<{ playerstats: { achievements?: { achieved: number }[] } }>(
     "/ISteamUserStats/GetPlayerAchievements/v1/",
     { steamid, appid },
-    [400],
+    { quietStatuses: [400, 500] },
   );
   const list = data?.playerstats.achievements;
   return list?.length ? { unlocked: list.filter((a) => a.achieved).length, total: list.length } : null;
 }
 
-async function getRecentGames(profile: string): Promise<Game[] | null> {
-  if (!STEAM_API_KEY || !profile) return null;
-  const steamid = await resolveSteamId(profile);
-  if (!steamid) return null;
-
-  const owned = await call<{ response: { games?: OwnedGame[] } }>("/IPlayerService/GetOwnedGames/v1/", {
-    steamid,
-    include_appinfo: 1,
-    include_played_free_games: 1,
-  });
-  const games = owned?.response.games;
-  if (!games?.length) {
-    warn("no games returned; is “Game details” set to Public in your Steam privacy settings?");
-    return null;
-  }
-
-  const recent = games
-    .filter((game) => game.rtime_last_played > 0 && !hiddenApps.includes(game.appid))
-    .sort((a, b) => b.rtime_last_played - a.rtime_last_played)
-    .slice(0, recentGamesLimit);
+async function load(profile: string): Promise<Game[]> {
+  const steamIds = games.flatMap((game) => (game.steamAppId ? [game.steamAppId] : []));
+  const [covers, steamid] = await Promise.all([
+    getCovers(steamIds),
+    STEAM_API_KEY && profile ? resolveSteamId(profile) : null,
+  ]);
   return Promise.all(
-    recent.map(async (game) => ({
-      appid: game.appid,
-      name: cleanName(game.name),
-      cover: await getCover(game.appid),
-      minutes: game.playtime_forever,
-      achievements: await getAchievements(steamid, game.appid),
+    games.map(async (game: GameEntry) => ({
+      name: game.name,
+      url: game.url ?? (game.steamAppId ? `https://store.steampowered.com/app/${game.steamAppId}/` : null),
+      cover: game.cover ?? (game.steamAppId ? (covers.get(game.steamAppId) ?? null) : null),
+      achievements:
+        steamid && game.onSteam && game.steamAppId ? await getAchievements(steamid, game.steamAppId) : null,
     })),
   );
 }
 
 let cached: Promise<Game[]> | undefined;
 
-/** Recently played games with stats, or the fallback list without stats. Fetched once per build. */
+/** The games from src/data/games.ts with cover art and achievements. Fetched once per build. */
 export function getGames(profile: string): Promise<Game[]> {
-  cached ??= getRecentGames(profile).then(
-    async (games) =>
-      games ??
-      Promise.all(
-        fallbackGames.map(async (game) => ({
-          ...game,
-          cover: await getCover(game.appid),
-          minutes: null,
-          achievements: null,
-        })),
-      ),
-  );
+  cached ??= load(profile);
   return cached;
 }

@@ -10,25 +10,7 @@ interface Props {
 
 const { lang } = Astro.props;
 const t = useTranslations(lang);
-const number = new Intl.NumberFormat(lang);
 const games = await getGames(site.steam.profile);
-
-const stats = (game: (typeof games)[number]) => {
-  const parts: string[] = [];
-  if (game.minutes !== null) {
-    parts.push(
-      game.minutes < 60 ? t("games.lessThanHour") : t("games.hours").replace("{n}", number.format(Math.round(game.minutes / 60))),
-    );
-  }
-  if (game.achievements) {
-    parts.push(
-      t("games.achievements")
-        .replace("{unlocked}", String(game.achievements.unlocked))
-        .replace("{total}", String(game.achievements.total)),
-    );
-  }
-  return parts.join(" · ");
-};
 ---
 
 <section id="games" class="scroll-mt-16 border-t border-line py-20 md:py-28">
@@ -46,34 +28,44 @@ const stats = (game: (typeof games)[number]) => {
     )
   }
 
+  <!-- Mobile: horizontal scroll. Desktop: one row of equal columns. -->
   <ul
-    class="-mx-4 mt-10 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-4 [scrollbar-width:thin] md:mx-0 md:scroll-px-0 md:px-0"
+    class="-mx-4 mt-10 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-4 [scrollbar-width:thin] md:mx-0 md:grid md:grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] md:overflow-visible md:px-0 md:pb-0"
   >
     {
-      games.map((game) => (
-        <li class="w-40 shrink-0 snap-start md:w-44">
-          <a href={`https://store.steampowered.com/app/${game.appid}/`} class="group block">
-            <div class="aspect-[2/3] overflow-hidden rounded-xl bg-surface ring-1 ring-line">
-              {game.cover ? (
-                <img
-                  src={game.cover}
-                  alt=""
-                  loading="lazy"
-                  width="600"
-                  height="900"
-                  class="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                />
-              ) : (
-                <div class="flex size-full items-end p-4 font-medium">{game.name}</div>
+      games.map((game) => {
+        const Tag = game.url ? "a" : "div";
+        return (
+          <li class="w-40 shrink-0 snap-start md:w-auto">
+            <Tag href={game.url ?? undefined} class="group block">
+              <div class="aspect-[2/3] overflow-hidden rounded-xl bg-surface ring-1 ring-line">
+                {game.cover ? (
+                  <img
+                    src={game.cover}
+                    alt=""
+                    loading="lazy"
+                    width="600"
+                    height="900"
+                    class="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                  />
+                ) : (
+                  <div class="flex size-full items-end bg-accent/10 p-4 font-medium">{game.name}</div>
+                )}
+              </div>
+              <h3 class="mt-3 line-clamp-2 text-sm font-medium transition-colors group-hover:text-accent" title={game.name}>
+                {game.name}
+              </h3>
+              {game.achievements && (
+                <p class="mt-1 font-mono text-xs text-muted">
+                  {t("games.achievements")
+                    .replace("{unlocked}", String(game.achievements.unlocked))
+                    .replace("{total}", String(game.achievements.total))}
+                </p>
               )}
-            </div>
-            <h3 class="mt-3 truncate text-sm font-medium transition-colors group-hover:text-accent" title={game.name}>
-              {game.name}
-            </h3>
-            {stats(game) && <p class="mt-1 font-mono text-xs text-muted">{stats(game)}</p>}
-          </a>
-        </li>
-      ))
+            </Tag>
+          </li>
+        );
+      })
     }
   </ul>
 </section>
