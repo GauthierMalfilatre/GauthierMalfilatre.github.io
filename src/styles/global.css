@@ -55,6 +55,12 @@
   --fx-side: #2e0638;
   --fx-strength: 0.16;
   --glow: 9%;
+  /* GitHub contribution levels 0-4. */
+  --contrib-0: color-mix(in oklab, var(--color-brand-600) 9%, var(--color-bg));
+  --contrib-1: var(--color-brand-200);
+  --contrib-2: var(--color-brand-400);
+  --contrib-3: var(--color-brand-600);
+  --contrib-4: var(--color-brand-800);
 }
 
 /* Dark tokens, applied in both dark cases (pinned, or following the OS). Keep the two blocks in sync. */
@@ -71,6 +77,11 @@
   --fx-side: #080808;
   --fx-strength: 0.42;
   --glow: 20%;
+  --contrib-0: color-mix(in oklab, var(--color-brand-600) 16%, var(--color-bg));
+  --contrib-1: var(--color-brand-700);
+  --contrib-2: var(--color-brand-500);
+  --contrib-3: var(--color-brand-300);
+  --contrib-4: var(--color-brand-100);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -87,6 +98,11 @@
     --fx-side: #080808;
     --fx-strength: 0.42;
     --glow: 20%;
+    --contrib-0: color-mix(in oklab, var(--color-brand-600) 16%, var(--color-bg));
+    --contrib-1: var(--color-brand-700);
+    --contrib-2: var(--color-brand-500);
+    --contrib-3: var(--color-brand-300);
+    --contrib-4: var(--color-brand-100);
   }
 }
 

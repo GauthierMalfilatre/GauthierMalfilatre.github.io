@@ -1,4 +1,5 @@
 ---
+import ContributionGraph from "./ContributionGraph.astro";
 import Icon from "./Icon.astro";
 import { site } from "../site.config";
 import { l, useTranslations, type Lang } from "../i18n/ui";
@@ -40,19 +41,22 @@ const cvIsFallback = !site.cv[lang];
     </div>
   </div>
 
-  <!-- Photo on a raised tile, echoing the background squares. -->
-  <div class="reveal relative order-first w-fit md:order-none" style="--i: 1">
-    <div
-      aria-hidden="true"
-      class="absolute inset-0 translate-x-2.5 translate-y-2.5 rounded-xl bg-brand-600/25 ring-1 ring-brand-600/40 md:translate-x-4 md:translate-y-4"
-    >
+  <!-- Photo on a raised tile, with the GitHub graph beside it (mobile) or below it (desktop). -->
+  <div class="reveal order-first flex items-center gap-5 md:order-none md:w-56 md:flex-col md:items-stretch md:gap-7" style="--i: 1">
+    <div class="relative w-fit shrink-0">
+      <div
+        aria-hidden="true"
+        class="absolute inset-0 translate-x-2.5 translate-y-2.5 rounded-xl bg-brand-600/25 ring-1 ring-brand-600/40 md:translate-x-4 md:translate-y-4"
+      >
+      </div>
+      <img
+        src={site.avatar}
+        alt={site.name}
+        width="224"
+        height="224"
+        class="relative size-24 rounded-xl object-cover ring-1 ring-brand-600/40 md:size-56"
+      />
     </div>
-    <img
-      src={site.avatar}
-      alt={site.name}
-      width="224"
-      height="224"
-      class="relative size-24 rounded-xl object-cover ring-1 ring-brand-600/40 md:size-56"
-    />
+    <ContributionGraph lang={lang} class="flex-1 md:flex-none" />
   </div>
 </section>

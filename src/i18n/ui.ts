@@ -34,6 +34,10 @@ const fr = {
   "games.intro": "Mes jeux du moment.",
   "games.profile": "Profil Steam",
   "games.achievements": "{unlocked}/{total} succès",
+  "github.total": "{n} contributions sur 12 mois",
+  "github.dayNone": "Aucune contribution le {date}",
+  "github.dayOne": "1 contribution le {date}",
+  "github.dayMany": "{n} contributions le {date}",
   "footer.built": "Site construit avec Astro.",
 };
 
@@ -64,6 +68,10 @@ const en: Record<keyof typeof fr, string> = {
   "games.intro": "What I’m playing at the moment.",
   "games.profile": "Steam profile",
   "games.achievements": "{unlocked}/{total} achievements",
+  "github.total": "{n} contributions in 12 months",
+  "github.dayNone": "No contributions on {date}",
+  "github.dayOne": "1 contribution on {date}",
+  "github.dayMany": "{n} contributions on {date}",
   "footer.built": "Built with Astro.",
 };
 

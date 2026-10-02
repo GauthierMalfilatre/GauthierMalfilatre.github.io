@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
-  # Daily rebuild so build-time data (Duolingo, Steam) stays fresh.
+  # Daily rebuild so build-time data (GitHub, Duolingo, Steam) stays fresh.
   schedule:
     - cron: "17 4 * * *"
   workflow_dispatch:

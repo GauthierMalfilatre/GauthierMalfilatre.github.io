@@ -33,6 +33,7 @@ The site is bilingual: French at `/`, English at `/en/`. Most text is written as
 
 Fetched at build time; the site rebuilds daily to keep it fresh. If a source fails, its part is hidden or falls back, and the build still succeeds.
 
+- **GitHub contributions** (graph next to the photo): read from the `github` URL in `src/site.config.ts`. No key needed.
 - **Duolingo:** set `duolingo.username` in `src/site.config.ts`. No key needed.
 - **Steam** (cover art needs nothing; your achievements need a key):
   1. Get a key at https://steamcommunity.com/dev/apikey (domain: `gauthiermalfilatre.github.io`).
