@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+/* Color tokens: one neutral scale + one accent. Dark values are swapped in below. */
+@theme {
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+
+  --color-bg: #fafafa;
+  --color-surface: #f4f4f5;
+  --color-fg: #18181b;
+  --color-muted: #52525b;
+  --color-line: #e4e4e7;
+  --color-accent: #047857;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #0c0c0e;
+    --color-surface: #18181b;
+    --color-fg: #f4f4f5;
+    --color-muted: #a1a1aa;
+    --color-line: #27272a;
+    --color-accent: #34d399;
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    animation: reveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(var(--i, 0) * 90ms);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
