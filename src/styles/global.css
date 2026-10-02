@@ -5,7 +5,7 @@
  * <html data-theme="...">, persisted in localStorage.
  * Visual motif: square "tiles" that lift (the background wave, section markers, hover states).
  * Radius scale: rounded-xl for buttons, images and panels; rounded-lg for chips.
- * Layers: background glow -z-20, background wave -z-10, sticky header z-20.
+ * Layers: background glow -z-20, background wave -z-10, sticky header z-20, scroll progress z-30.
  */
 @custom-variant dark {
   &:where([data-theme="dark"], [data-theme="dark"] *) {
@@ -153,6 +153,48 @@
     :where(.group):focus-visible & {
       translate: none;
     }
+  }
+}
+
+/*
+ * Reading progress bar at the bottom of the screen, replacing the page scrollbar.
+ * Only where scroll-driven animations are supported; elsewhere the native scrollbar stays.
+ */
+.scroll-progress {
+  display: none;
+}
+
+@supports (animation-timeline: scroll()) {
+  html {
+    scrollbar-width: none;
+  }
+  html::-webkit-scrollbar {
+    display: none;
+  }
+  .scroll-progress {
+    display: block;
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 30;
+    height: 4px;
+    pointer-events: none;
+    background: linear-gradient(90deg, var(--color-brand-600), var(--color-brand-400));
+    /* Segmented, like the background squares. */
+    mask: repeating-linear-gradient(90deg, #000 0 14px, transparent 14px 16px);
+    /* Longhands on purpose: the minifier folds a timeline into the `animation` shorthand, which browsers reject. */
+    animation-name: scroll-progress;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: scroll(root block);
+  }
+}
+
+@keyframes scroll-progress {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
   }
 }
 

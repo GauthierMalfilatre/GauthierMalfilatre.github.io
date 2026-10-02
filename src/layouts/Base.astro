@@ -59,6 +59,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   </head>
   <body class="min-h-dvh bg-bg font-sans text-fg antialiased">
     <TechBackground />
+    <div aria-hidden="true" class="scroll-progress"></div>
     <slot />
   </body>
 </html>
