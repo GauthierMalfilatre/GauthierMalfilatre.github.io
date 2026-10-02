@@ -14,7 +14,7 @@ export const site = {
   duolingo: { username: "gzzutier" },
 
   // Steam profile URL (steamcommunity.com/id/... or /profiles/...). Stats also need STEAM_API_KEY (see README).
-  steam: { profile: "" },
+  steam: { profile: "https://steamcommunity.com/profiles/76561199639019411/" },
 
   // CV per language, served from public/cv/. An empty value falls back to the French CV.
   cv: { fr: "/cv/gauthier-malfilatre-cv-fr.pdf", en: "" },
