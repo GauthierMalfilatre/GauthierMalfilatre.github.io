@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
-  # Daily rebuild so build-time data (Duolingo stats) stays fresh.
+  # Daily rebuild so build-time data (Duolingo, Steam) stays fresh.
   schedule:
     - cron: "17 4 * * *"
   workflow_dispatch:
@@ -20,6 +20,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Optional: enables Steam stats. Set it in Settings > Secrets and variables > Actions.
+      STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
     steps:
       - uses: actions/checkout@v7
       # Installs deps (detects package-lock.json), runs `astro build`, uploads dist/ as the Pages artifact.

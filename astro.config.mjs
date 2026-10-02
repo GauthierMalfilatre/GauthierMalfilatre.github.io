@@ -1,5 +1,5 @@
 // @ts-check
-import { defineConfig } from "astro/config";
+import { defineConfig, envField } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
@@ -10,6 +10,12 @@ export default defineConfig({
     defaultLocale: "fr",
     // French lives at /, English at /en/.
     routing: { prefixDefaultLocale: false },
+  },
+  env: {
+    schema: {
+      // Optional. Enables Steam stats in the video games section. Read at build time only, never sent to the browser.
+      STEAM_API_KEY: envField.string({ context: "server", access: "secret", optional: true }),
+    },
   },
   vite: {
     plugins: [tailwindcss()],

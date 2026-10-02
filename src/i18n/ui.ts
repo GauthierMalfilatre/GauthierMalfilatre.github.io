@@ -29,6 +29,12 @@ const fr = {
   "duolingo.xp": "Duolingo : {xp} XP",
   "duolingo.streak": "série de {n} jours",
   "duolingo.streakOne": "série de 1 jour",
+  "games.title": "Jeux vidéo",
+  "games.intro": "J’adore les jeux vidéo. Voici ce à quoi j’ai joué récemment.",
+  "games.profile": "Profil Steam",
+  "games.hours": "{n} h",
+  "games.lessThanHour": "< 1 h",
+  "games.achievements": "{unlocked}/{total} succès",
   "footer.built": "Site construit avec Astro.",
 };
 
@@ -54,6 +60,12 @@ const en: Record<keyof typeof fr, string> = {
   "duolingo.xp": "Duolingo: {xp} XP",
   "duolingo.streak": "{n}-day streak",
   "duolingo.streakOne": "1-day streak",
+  "games.title": "Video games",
+  "games.intro": "I love video games. Here’s what I’ve been playing lately.",
+  "games.profile": "Steam profile",
+  "games.hours": "{n} h",
+  "games.lessThanHour": "< 1 h",
+  "games.achievements": "{unlocked}/{total} achievements",
   "footer.built": "Built with Astro.",
 };
 
