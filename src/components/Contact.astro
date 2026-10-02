@@ -12,28 +12,27 @@ const t = useTranslations(lang);
 const cv = site.cv[lang] || site.cv.fr;
 const cvIsFallback = !site.cv[lang];
 
-const link =
-  "inline-flex items-center gap-2 underline decoration-line underline-offset-4 transition-colors hover:text-accent hover:decoration-accent";
+const link = "link inline-flex items-center gap-2";
 ---
 
-<section id="contact" class="scroll-mt-16 border-t border-line py-20 md:py-28">
+<section id="contact" class="scroll-mt-20 border-t border-line py-20 md:py-28">
   <h2 class="max-w-[22ch] text-3xl text-balance leading-[1.1] font-semibold tracking-tighter md:text-5xl">
-    {t("contact.title")}
+    {t("contact.title")} <span class="text-accent">{t("contact.titleAccent")}</span>
   </h2>
   <p class="mt-6 max-w-[60ch] text-lg leading-relaxed text-muted">{l(site.lookingFor, lang)}</p>
   <ul class="mt-10 flex flex-wrap gap-x-8 gap-y-4 text-lg">
     <li>
-      <a href={`mailto:${site.email}`} class={link}><Icon name="envelope-simple" class="size-5" />{site.email}</a>
+      <a href={`mailto:${site.email}`} class={link}><Icon name="envelope-simple" class="size-5 text-accent" />{site.email}</a>
     </li>
     <li>
-      <a href={site.linkedin} class={link}><Icon name="linkedin-logo" class="size-5" />LinkedIn</a>
+      <a href={site.linkedin} class={link}><Icon name="linkedin-logo" class="size-5 text-accent" />LinkedIn</a>
     </li>
     <li>
-      <a href={site.github} class={link}><Icon name="github-logo" class="size-5" />GitHub</a>
+      <a href={site.github} class={link}><Icon name="github-logo" class="size-5 text-accent" />GitHub</a>
     </li>
     <li>
       <a href={cv} download hreflang={cvIsFallback ? "fr" : undefined} type="application/pdf" class={link}>
-        <Icon name="download-simple" class="size-5" />
+        <Icon name="download-simple" class="size-5 text-accent" />
         {t(cvIsFallback ? "cta.cvFallback" : "cta.cv")}
       </a>
     </li>

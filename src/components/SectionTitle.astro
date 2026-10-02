@@ -1,0 +1,12 @@
+---
+// Section heading with the lifted-square marker.
+interface Props {
+  class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<h2 class:list={["flex items-center gap-3 text-2xl font-semibold tracking-tight md:text-3xl", className]}>
+  <span aria-hidden="true" class="size-2.5 shrink-0 bg-brand-600 shadow-[3px_3px_0_var(--color-lift)]"></span>
+  <slot />
+</h2>

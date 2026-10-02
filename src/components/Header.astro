@@ -20,33 +20,38 @@ const links = [
 ];
 ---
 
-<header class="mx-auto flex h-16 max-w-5xl items-center justify-between gap-6 px-4 md:px-8">
-  <a href={getRelativeLocaleUrl(lang)} class="font-medium tracking-tight">{site.name}</a>
-  <div class="flex items-center gap-6">
-    <nav class="hidden gap-6 text-sm text-muted md:flex">
-      {links.map(([href, label]) => <a href={href} class="transition-colors hover:text-fg">{label}</a>)}
-    </nav>
-    <div class="flex items-center gap-1">
-      <a
-        href={getRelativeLocaleUrl(other)}
-        hreflang={other}
-        lang={other}
-        aria-label={t("lang.switch")}
-        title={t("lang.switch")}
-        class="rounded-lg px-2 py-1.5 font-mono text-xs text-muted uppercase transition-colors hover:bg-surface hover:text-fg"
-      >
-        {other}
-      </a>
-      <button
-        type="button"
-        data-theme-toggle
-        aria-label={t("theme.toggle")}
-        title={t("theme.toggle")}
-        class="rounded-lg p-2 text-muted transition-colors hover:bg-surface hover:text-fg"
-      >
-        <Icon name="moon" class="size-4 dark:hidden" />
-        <Icon name="sun" class="hidden size-4 dark:block" />
-      </button>
+<header class="sticky top-0 z-20 border-b border-line/70 bg-bg/75 backdrop-blur-md">
+  <div class="mx-auto flex h-16 max-w-5xl items-center justify-between gap-6 px-4 md:px-8">
+    <a href={getRelativeLocaleUrl(lang)} class="flex items-center gap-2.5 font-medium tracking-tight">
+      <span aria-hidden="true" class="size-2.5 bg-brand-600 shadow-[3px_3px_0_var(--color-lift)]"></span>
+      {site.name}
+    </a>
+    <div class="flex items-center gap-6">
+      <nav class="hidden gap-6 text-sm text-muted md:flex">
+        {links.map(([href, label]) => <a href={href} class="transition-colors hover:text-accent">{label}</a>)}
+      </nav>
+      <div class="flex items-center gap-1">
+        <a
+          href={getRelativeLocaleUrl(other)}
+          hreflang={other}
+          lang={other}
+          aria-label={t("lang.switch")}
+          title={t("lang.switch")}
+          class="rounded-lg px-2 py-1.5 font-mono text-xs text-muted uppercase transition-colors hover:bg-brand-600/10 hover:text-accent"
+        >
+          {other}
+        </a>
+        <button
+          type="button"
+          data-theme-toggle
+          aria-label={t("theme.toggle")}
+          title={t("theme.toggle")}
+          class="rounded-lg p-2 text-muted transition-colors hover:bg-brand-600/10 hover:text-accent"
+        >
+          <Icon name="moon" class="size-4 dark:hidden" />
+          <Icon name="sun" class="hidden size-4 dark:block" />
+        </button>
+      </div>
     </div>
   </div>
 </header>

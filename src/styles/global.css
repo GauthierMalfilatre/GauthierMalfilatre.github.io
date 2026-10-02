@@ -3,7 +3,9 @@
 /*
  * Theme: follows the OS by default; the header toggle pins light or dark via
  * <html data-theme="...">, persisted in localStorage.
+ * Visual motif: square "tiles" that lift (the background wave, section markers, hover states).
  * Radius scale: rounded-xl for buttons, images and panels; rounded-lg for chips.
+ * Layers: background glow -z-20, background wave -z-10, sticky header z-20.
  */
 @custom-variant dark {
   &:where([data-theme="dark"], [data-theme="dark"] *) {
@@ -20,54 +22,137 @@
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono Variable", ui-monospace, monospace;
 
-  --color-bg: #fafafa;
-  --color-surface: #f4f4f5;
-  --color-fg: #18181b;
-  --color-muted: #52525b;
-  --color-line: #e4e4e7;
+  /* Brand purple scale, built around #7e008d (600). Same in both themes. */
+  --color-brand-50: #fbf2fc;
+  --color-brand-100: #f2d9f6;
+  --color-brand-200: #e4b0ec;
+  --color-brand-300: #d38ee0;
+  --color-brand-400: #b55ac4;
+  --color-brand-500: #9a2aab;
+  --color-brand-600: #7e008d;
+  --color-brand-700: #66007a;
+  --color-brand-800: #4b005a;
+  --color-brand-900: #2e0638;
+  --color-brand-950: #1d0a22;
+
+  /* Semantic tokens, light values. Dark values are swapped in below. */
+  --color-bg: #f8f7f9;
+  --color-surface: #f0ecf2;
+  --color-fg: #1a161c;
+  --color-muted: #5d5562;
+  --color-line: #e2dbe6;
+  /* Purple for text and icons on the page background. */
   --color-accent: #7e008d;
+  /* Offset shadow of a lifted tile. */
+  --color-lift: #e8cdef;
 }
 
 :root {
   color-scheme: light;
+  /* Background wave colors (read by TechBackground.astro). */
+  --fx-face: #7e008d;
+  --fx-edge: #9a2aab;
+  --fx-side: #2e0638;
+  --fx-strength: 0.16;
+  --glow: 9%;
 }
 
 /* Dark tokens, applied in both dark cases (pinned, or following the OS). Keep the two blocks in sync. */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --color-bg: #0c0c0e;
-  --color-surface: #18181b;
-  --color-fg: #f4f4f5;
-  --color-muted: #a1a1aa;
-  --color-line: #27272a;
-  /* #7e008d is too dark to read on the dark background; same hue, lighter. */
-  --color-accent: #d77ee3;
+  --color-bg: #161616;
+  --color-surface: #1e1b20;
+  --color-fg: #f3eff5;
+  --color-muted: #a9a1ae;
+  --color-line: #2d2830;
+  --color-accent: #d38ee0;
+  --color-lift: #3a0745;
+  --fx-edge: #c46fd0;
+  --fx-side: #080808;
+  --fx-strength: 0.42;
+  --glow: 20%;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --color-bg: #0c0c0e;
-    --color-surface: #18181b;
-    --color-fg: #f4f4f5;
-    --color-muted: #a1a1aa;
-    --color-line: #27272a;
-    --color-accent: #d77ee3;
+    --color-bg: #161616;
+    --color-surface: #1e1b20;
+    --color-fg: #f3eff5;
+    --color-muted: #a9a1ae;
+    --color-line: #2d2830;
+    --color-accent: #d38ee0;
+    --color-lift: #3a0745;
+    --fx-edge: #c46fd0;
+    --fx-side: #080808;
+    --fx-strength: 0.42;
+    --glow: 20%;
   }
 }
 
 @layer base {
   html {
     scroll-behavior: smooth;
+    scrollbar-color: var(--color-brand-600) transparent;
   }
   ::selection {
-    background: var(--color-accent);
-    color: var(--color-bg);
+    background: var(--color-brand-600);
+    color: var(--color-brand-50);
   }
   :focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 3px;
     border-radius: 4px;
+  }
+}
+
+/* Soft purple light in the top-left corner, where the background waves start. */
+@utility ambient-glow {
+  background: radial-gradient(
+    60rem 40rem at 0% 0%,
+    color-mix(in oklab, var(--color-brand-600) var(--glow), transparent),
+    transparent 70%
+  );
+}
+
+@utility btn {
+  @apply inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium whitespace-nowrap transition active:scale-[0.98];
+}
+
+@utility btn-primary {
+  @apply btn bg-brand-600 text-brand-50 hover:bg-brand-500;
+  box-shadow: 0 10px 30px -12px var(--color-brand-600);
+}
+
+@utility btn-secondary {
+  @apply btn ring-1 ring-brand-600/40 hover:bg-brand-600/10;
+}
+
+@utility chip {
+  @apply rounded-lg bg-brand-600/10 px-2 py-0.5 font-mono text-xs text-accent ring-1 ring-brand-600/20;
+}
+
+@utility link {
+  @apply underline decoration-brand-600/40 underline-offset-4 transition-colors hover:text-accent hover:decoration-accent;
+}
+
+/* A tile that lifts up-left on hover (itself, or inside a hovered .group), like the background squares. */
+@utility lift {
+  transition:
+    translate 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  &:hover,
+  :where(.group):hover &,
+  :where(.group):focus-visible & {
+    translate: -3px -3px;
+    box-shadow: 4px 4px 0 var(--color-lift);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &:hover,
+    :where(.group):hover &,
+    :where(.group):focus-visible & {
+      translate: none;
+    }
   }
 }
 

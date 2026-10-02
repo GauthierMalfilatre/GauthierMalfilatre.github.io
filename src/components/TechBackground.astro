@@ -1,0 +1,136 @@
+---
+// Background "tech wave": every few seconds a wave starts in the top-left corner and
+// lifts the grid squares it passes, then they dissolve back into the background.
+// Idle between waves (no animation frames); off when the tab is hidden or the
+// visitor prefers reduced motion. Colors come from the --fx-* variables in global.css.
+---
+
+<div aria-hidden="true" class="ambient-glow pointer-events-none fixed inset-0 -z-20"></div>
+<canvas data-tech-bg aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 size-full"></canvas>
+
+<script>
+  const CELL = 34; // grid pitch, px
+  const GAP = 6; // space between squares, px
+  const SPEED = 750; // wave speed, px/s
+  const BAND = 320; // wave thickness, px
+  const RAGGED = 120; // random per-square delay, px: makes the wave front irregular
+  const LIFT = 5; // max lift, px
+  const FIRST_DELAY = 1200; // ms after load or tab focus
+  const MIN_DELAY = 7000; // ms between waves
+  const MAX_DELAY = 12000;
+
+  function init(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+    const motion = matchMedia("(prefers-reduced-motion: reduce)");
+    let width = 0;
+    let height = 0;
+    let cols = 0;
+    let rows = 0;
+    let delays = new Float32Array(0); // per square, 0..1
+    let glints = new Float32Array(0); // per square, 0..1, mostly low: a few squares flash brighter
+    let colors = readColors();
+    let start = 0;
+    let frame = 0;
+    let timer = 0;
+
+    function readColors() {
+      const style = getComputedStyle(document.documentElement);
+      const read = (name: string) => style.getPropertyValue(name).trim();
+      return {
+        face: read("--fx-face"),
+        edge: read("--fx-edge"),
+        side: read("--fx-side"),
+        strength: parseFloat(read("--fx-strength")) || 0.3,
+      };
+    }
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cols = Math.ceil(width / CELL) + 1;
+      rows = Math.ceil(height / CELL) + 1;
+      delays = Float32Array.from({ length: cols * rows }, () => Math.random());
+      glints = Float32Array.from({ length: cols * rows }, () => Math.random() ** 4);
+    }
+
+    function draw(now: number) {
+      const front = ((now - start) / 1000) * SPEED;
+      const size = CELL - GAP;
+      ctx.clearRect(0, 0, width, height);
+
+      for (let row = 0; row < rows; row++) {
+        const y = row * CELL;
+        if (y > front) break;
+        for (let col = 0; col < cols; col++) {
+          const x = col * CELL;
+          if (x > front) break;
+          const i = row * cols + col;
+          // 0 when the wave reaches the square, 1 when it has passed.
+          const p = (front - Math.hypot(x, y) - delays[i] * RAGGED) / BAND;
+          if (p <= 0 || p >= 1) continue;
+          // Sharp rise, slow fade.
+          const k = p < 0.15 ? p / 0.15 : (1 - (p - 0.15) / 0.85) ** 2;
+          const alpha = k * colors.strength;
+          const lift = k * LIFT;
+          const left = x + GAP / 2;
+          const top = y + GAP / 2;
+
+          // Shadow where the square sat, face lifted up-left: reads as a raised tile.
+          ctx.globalAlpha = alpha * 0.9;
+          ctx.fillStyle = colors.side;
+          ctx.fillRect(left, top, size, size);
+          ctx.globalAlpha = alpha * (0.55 + 0.45 * glints[i]);
+          ctx.fillStyle = colors.face;
+          ctx.fillRect(left - lift, top - lift, size, size);
+          ctx.globalAlpha = Math.min(1, alpha * (1.2 + 1.5 * glints[i]));
+          ctx.strokeStyle = colors.edge;
+          ctx.strokeRect(left - lift + 0.5, top - lift + 0.5, size - 1, size - 1);
+        }
+      }
+      ctx.globalAlpha = 1;
+
+      if (front - RAGGED - BAND < Math.hypot(width, height)) {
+        frame = requestAnimationFrame(draw);
+      } else {
+        ctx.clearRect(0, 0, width, height);
+        schedule(MIN_DELAY + Math.random() * (MAX_DELAY - MIN_DELAY));
+      }
+    }
+
+    function wave() {
+      if (motion.matches || document.hidden) return;
+      colors = readColors(); // the theme may have changed since the last wave
+      start = performance.now();
+      frame = requestAnimationFrame(draw);
+    }
+
+    function schedule(delay: number) {
+      clearTimeout(timer);
+      timer = window.setTimeout(wave, delay);
+    }
+
+    function stop() {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+      ctx.clearRect(0, 0, width, height);
+    }
+
+    let resizeTimer = 0;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(resize, 150);
+    });
+    document.addEventListener("visibilitychange", () => (document.hidden ? stop() : schedule(FIRST_DELAY)));
+    motion.addEventListener("change", () => (motion.matches ? stop() : schedule(FIRST_DELAY)));
+
+    resize();
+    schedule(FIRST_DELAY);
+  }
+
+  const canvas = document.querySelector<HTMLCanvasElement>("[data-tech-bg]");
+  const ctx = canvas?.getContext("2d");
+  if (canvas && ctx) init(canvas, ctx);
+</script>

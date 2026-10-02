@@ -1,5 +1,6 @@
 ---
 import Icon from "./Icon.astro";
+import SectionTitle from "./SectionTitle.astro";
 import { getGames } from "../lib/steam";
 import { site } from "../site.config";
 import { useTranslations, type Lang } from "../i18n/ui";
@@ -13,14 +14,14 @@ const t = useTranslations(lang);
 const games = await getGames(site.steam.profile);
 ---
 
-<section id="games" class="scroll-mt-16 border-t border-line py-20 md:py-28">
-  <h2 class="text-2xl font-semibold tracking-tight md:text-3xl">{t("games.title")}</h2>
+<section id="games" class="scroll-mt-20 border-t border-line py-20 md:py-28">
+  <SectionTitle>{t("games.title")}</SectionTitle>
   <p class="mt-6 max-w-[60ch] text-lg leading-relaxed text-muted">{t("games.intro")}</p>
   {
     site.steam.profile && (
       <a
         href={site.steam.profile}
-        class="mt-4 inline-flex items-center gap-1 text-sm font-medium transition-colors hover:text-accent"
+        class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-accent transition-colors hover:text-fg"
       >
         {t("games.profile")}
         <Icon name="arrow-up-right" class="size-3.5" />
@@ -38,7 +39,7 @@ const games = await getGames(site.steam.profile);
         return (
           <li class="w-40 shrink-0 snap-start md:w-auto">
             <Tag href={game.url ?? undefined} class="group block">
-              <div class="aspect-[2/3] overflow-hidden rounded-xl bg-surface ring-1 ring-line">
+              <div class="lift aspect-[2/3] overflow-hidden rounded-xl bg-surface ring-1 ring-line group-hover:ring-brand-600/60">
                 {game.cover ? (
                   <img
                     src={game.cover}
@@ -46,7 +47,7 @@ const games = await getGames(site.steam.profile);
                     loading="lazy"
                     width="600"
                     height="900"
-                    class="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    class="size-full object-cover"
                   />
                 ) : (
                   <div class="flex size-full items-end bg-accent/10 p-4 font-medium">{game.name}</div>

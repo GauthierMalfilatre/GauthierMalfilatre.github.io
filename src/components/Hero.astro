@@ -13,43 +13,46 @@ const cv = site.cv[lang] || site.cv.fr;
 const cvIsFallback = !site.cv[lang];
 ---
 
-<section class="grid items-center gap-8 pt-10 pb-20 md:grid-cols-[1fr_auto] md:gap-16 md:pt-24 md:pb-28">
+<section class="grid items-center gap-10 pt-10 pb-20 md:grid-cols-[1fr_auto] md:gap-16 md:pt-20 md:pb-28">
   <div>
-    <p class="reveal flex items-center gap-2 text-sm text-muted">
-      <span class="size-2 rounded-full bg-accent"></span>
+    <p
+      class="reveal inline-flex items-center gap-2.5 rounded-lg bg-brand-600/10 px-3 py-1.5 text-sm text-accent ring-1 ring-brand-600/25"
+    >
+      <span class="relative flex size-2">
+        <span class="absolute inline-flex size-full animate-ping rounded-full bg-brand-500 opacity-60 motion-reduce:hidden"
+        ></span>
+        <span class="relative size-2 rounded-full bg-brand-500"></span>
+      </span>
       {l(site.availability, lang)}
     </p>
-    <h1 class="reveal mt-4 text-4xl leading-[1.05] font-semibold tracking-tighter md:text-6xl" style="--i: 1">
+    <h1 class="reveal mt-6 text-4xl leading-[1.05] font-semibold tracking-tighter md:text-6xl" style="--i: 1">
       {site.name}
     </h1>
     <p class="reveal mt-5 max-w-[50ch] text-lg leading-relaxed text-muted" style="--i: 2">
       {l(site.tagline, lang)}
     </p>
     <div class="reveal mt-8 flex flex-wrap gap-3" style="--i: 3">
-      <a
-        href={cv}
-        download
-        hreflang={cvIsFallback ? "fr" : undefined}
-        type="application/pdf"
-        class="inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-medium text-bg transition-transform active:scale-[0.98]"
-      >
+      <a href={cv} download hreflang={cvIsFallback ? "fr" : undefined} type="application/pdf" class="btn-primary">
         <Icon name="download-simple" />
         {t(cvIsFallback ? "cta.cvFallback" : "cta.cv")}
       </a>
-      <a
-        href="#contact"
-        class="rounded-xl px-5 py-2.5 text-sm font-medium ring-1 ring-line transition-colors hover:bg-surface active:scale-[0.98]"
-      >
-        {t("cta.contact")}
-      </a>
+      <a href="#contact" class="btn-secondary">{t("cta.contact")}</a>
     </div>
   </div>
-  <img
-    src={site.avatar}
-    alt={site.name}
-    width="224"
-    height="224"
-    class="reveal order-first size-24 rounded-xl object-cover ring-1 ring-line md:order-none md:size-56"
-    style="--i: 1"
-  />
+
+  <!-- Photo on a raised tile, echoing the background squares. -->
+  <div class="reveal relative order-first w-fit md:order-none" style="--i: 1">
+    <div
+      aria-hidden="true"
+      class="absolute inset-0 translate-x-2.5 translate-y-2.5 rounded-xl bg-brand-600/25 ring-1 ring-brand-600/40 md:translate-x-4 md:translate-y-4"
+    >
+    </div>
+    <img
+      src={site.avatar}
+      alt={site.name}
+      width="224"
+      height="224"
+      class="relative size-24 rounded-xl object-cover ring-1 ring-brand-600/40 md:size-56"
+    />
+  </div>
 </section>

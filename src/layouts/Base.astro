@@ -3,6 +3,7 @@ import { getAbsoluteLocaleUrl } from "astro:i18n";
 import "@fontsource-variable/geist";
 import "@fontsource-variable/geist-mono";
 import "../styles/global.css";
+import TechBackground from "../components/TechBackground.astro";
 import { site } from "../site.config";
 import { l, languages, type Lang } from "../i18n/ui";
 
@@ -29,6 +30,8 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f8f7f9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#161616" media="(prefers-color-scheme: dark)" />
     <script is:inline>
       // Apply the saved theme before first paint to avoid a flash.
       try {
@@ -55,6 +58,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:image" content={site.avatar} />
   </head>
   <body class="min-h-dvh bg-bg font-sans text-fg antialiased">
+    <TechBackground />
     <slot />
   </body>
 </html>
