@@ -5,5 +5,10 @@ export const fallbackGames: { appid: number; name: string }[] = [
   { appid: 1229490, name: "ULTRAKILL" },
 ];
 
+/** Steam apps never shown, by app id (tools, not games). Find an id in its store URL. */
+export const hiddenApps: number[] = [
+  431960, // Wallpaper Engine
+];
+
 /** How many recently played games to show. */
-export const recentGamesLimit = 6;
+export const recentGamesLimit = 5;

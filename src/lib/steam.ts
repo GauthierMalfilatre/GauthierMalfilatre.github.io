@@ -2,7 +2,7 @@
 // only the derived numbers end up in the generated HTML.
 // Every failure degrades to the fallback list so Steam never breaks the build.
 import { STEAM_API_KEY } from "astro:env/server";
-import { fallbackGames, recentGamesLimit } from "../data/games";
+import { fallbackGames, hiddenApps, recentGamesLimit } from "../data/games";
 
 export interface Game {
   appid: number;
@@ -23,20 +23,37 @@ interface OwnedGame {
 const API = "https://api.steampowered.com";
 const CDN = "https://cdn.cloudflare.steamstatic.com/steam/apps";
 
-async function call<T>(path: string, params: Record<string, string | number>, quiet = false): Promise<T | null> {
+const warned = new Set<string>();
+function warn(message: string) {
+  if (!warned.has(message)) console.warn(`[steam] ${message}`);
+  warned.add(message);
+}
+
+async function call<T>(
+  path: string,
+  params: Record<string, string | number>,
+  quietStatuses: number[] = [],
+): Promise<T | null> {
   const url = new URL(path, API);
   url.searchParams.set("key", STEAM_API_KEY ?? "");
   for (const [name, value] of Object.entries(params)) url.searchParams.set(name, String(value));
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (res.ok) return (await res.json()) as T;
-    if (!quiet) console.warn(`[steam] ${path}: HTTP ${res.status}`);
+    if (res.status === 403 && path.includes("Achievements")) {
+      warn("achievements hidden: set “Game details” to Public in your Steam privacy settings");
+    } else if (!quietStatuses.includes(res.status)) {
+      warn(`${path}: HTTP ${res.status}`);
+    }
   } catch (error) {
     // Log the path only: the full URL contains the key.
-    if (!quiet) console.warn(`[steam] ${path}: ${error}`);
+    warn(`${path}: ${error}`);
   }
   return null;
 }
+
+/** "DRAGON QUEST BUILDERS™ 2" → "DRAGON QUEST BUILDERS 2" */
+const cleanName = (name: string) => name.replace(/[™®©]/g, "").replace(/\s+/g, " ").trim();
 
 async function resolveSteamId(profile: string): Promise<string | null> {
   const id = profile.match(/\b(\d{17})\b/)?.[1];
@@ -45,7 +62,7 @@ async function resolveSteamId(profile: string): Promise<string | null> {
   const data = await call<{ response: { success: number; steamid?: string } }>("/ISteamUser/ResolveVanityURL/v1/", {
     vanityurl: vanity,
   });
-  if (data?.response.success !== 1) console.warn(`[steam] could not resolve profile "${profile}"`);
+  if (data?.response.success !== 1) warn(`could not resolve profile "${profile}"`);
   return data?.response.steamid ?? null;
 }
 
@@ -61,11 +78,11 @@ async function getCover(appid: number): Promise<string | null> {
 }
 
 async function getAchievements(steamid: string, appid: number) {
-  // Games without achievements answer with an error, so stay quiet here.
+  // Games without achievements answer 400, which is expected.
   const data = await call<{ playerstats: { achievements?: { achieved: number }[] } }>(
     "/ISteamUserStats/GetPlayerAchievements/v1/",
     { steamid, appid },
-    true,
+    [400],
   );
   const list = data?.playerstats.achievements;
   return list?.length ? { unlocked: list.filter((a) => a.achieved).length, total: list.length } : null;
@@ -83,18 +100,18 @@ async function getRecentGames(profile: string): Promise<Game[] | null> {
   });
   const games = owned?.response.games;
   if (!games?.length) {
-    console.warn("[steam] no games returned; is “Game details” set to Public in your Steam privacy settings?");
+    warn("no games returned; is “Game details” set to Public in your Steam privacy settings?");
     return null;
   }
 
   const recent = games
-    .filter((game) => game.rtime_last_played > 0)
+    .filter((game) => game.rtime_last_played > 0 && !hiddenApps.includes(game.appid))
     .sort((a, b) => b.rtime_last_played - a.rtime_last_played)
     .slice(0, recentGamesLimit);
   return Promise.all(
     recent.map(async (game) => ({
       appid: game.appid,
-      name: game.name,
+      name: cleanName(game.name),
       cover: await getCover(game.appid),
       minutes: game.playtime_forever,
       achievements: await getAchievements(steamid, game.appid),
