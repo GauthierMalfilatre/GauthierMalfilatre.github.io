@@ -17,6 +17,6 @@ export const games: GameEntry[] = [
   { name: "ULTRAKILL", steamAppId: 1229490, onSteam: true },
   { name: "Vampire Survivors", steamAppId: 1794680, onSteam: true },
   { name: "Wuthering Waves", steamAppId: 3513350, url: "https://wutheringwaves.kurogames.com/" },
-  // Not on Steam. Add cover: "/games/honkai-star-rail.jpg" once the image is in public/games/.
-  { name: "Honkai: Star Rail", url: "https://hsr.hoyoverse.com/" },
+  // Not on Steam: cover is the Epic Games Store portrait art, saved in public/games/.
+  { name: "Honkai: Star Rail", url: "https://hsr.hoyoverse.com/", cover: "/games/honkai-star-rail.jpg" },
 ];
