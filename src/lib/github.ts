@@ -35,23 +35,29 @@ function parse(html: string): Contributions | null {
   return { total, days };
 }
 
+const ATTEMPTS = 2; // github.com is occasionally slow from CI runners
+const TIMEOUT = 15_000;
+
+async function fetchContributions(username: string): Promise<Contributions | null> {
+  const url = `https://github.com/users/${encodeURIComponent(username)}/contributions`;
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" }, signal: AbortSignal.timeout(TIMEOUT) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = parse(await res.text());
+      if (!data) throw new Error("unexpected page format");
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`[github] contributions for ${username}, attempt ${attempt}/${ATTEMPTS}: ${message}`);
+    }
+  }
+  return null;
+}
+
 const cache = new Map<string, Promise<Contributions | null>>();
 
 export function getContributions(username: string): Promise<Contributions | null> {
-  if (!cache.has(username)) {
-    cache.set(
-      username,
-      fetch(`https://github.com/users/${encodeURIComponent(username)}/contributions`, {
-        headers: { "User-Agent": "Mozilla/5.0" },
-        signal: AbortSignal.timeout(8000),
-      })
-        .then((res) => (res.ok ? res.text() : Promise.reject(new Error(`HTTP ${res.status}`))))
-        .then((html) => parse(html) ?? Promise.reject(new Error("unexpected page format")))
-        .catch((error) => {
-          console.warn(`[github] contributions for ${username}: ${error.message ?? error}`);
-          return null;
-        }),
-    );
-  }
+  if (!cache.has(username)) cache.set(username, fetchContributions(username));
   return cache.get(username)!;
 }
