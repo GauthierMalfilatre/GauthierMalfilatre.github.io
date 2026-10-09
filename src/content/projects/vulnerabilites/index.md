@@ -6,6 +6,6 @@ description:
 context: grdf
 team: 3
 tags: [Angular, PHP Symfony, Tailwind CSS, MySQL]
-order: 2
+order: 1
 cover: ./cover.png
 ---
