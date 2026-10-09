@@ -4,6 +4,7 @@ import "@fontsource-variable/fraunces/soft.css";
 import "@fontsource-variable/fraunces/soft-italic.css";
 import "@fontsource-variable/nunito";
 import "../styles/global.css";
+import RainBackground from "../components/RainBackground.astro";
 import { site } from "../site.config";
 import { l, languages, type Lang } from "../i18n/ui";
 
@@ -59,6 +60,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   </head>
   <body class="min-h-dvh bg-bg font-sans text-fg antialiased">
     <div aria-hidden="true" class="ambient-glow pointer-events-none fixed inset-0 -z-10"></div>
+    <RainBackground />
     <div aria-hidden="true" class="scroll-progress"></div>
     <slot />
   </body>

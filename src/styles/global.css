@@ -8,7 +8,7 @@
  * Fonts: Fraunces with its SOFT axis for headings, Nunito for text.
  * Radius scale: rounded-2xl for panels and images, rounded-full for buttons and chips.
  * Layout (Home.astro): sticky sidebar on the left from lg up, sections scrolling on the right.
- * Layers: lamp glow -z-10, scroll progress z-30.
+ * Layers: lamp glow and rain on the window -z-10, scroll progress z-30.
  */
 @custom-variant dark {
   &:where([data-theme="dark"], [data-theme="dark"] *) {
@@ -53,6 +53,10 @@
 :root {
   color-scheme: light;
   --glow: 10%;
+  /* Rain on the window (RainBackground.astro): rim and highlight as "r, g, b", overall opacity. */
+  --rain-rim: 95, 46, 24;
+  --rain-shine: 255, 255, 255;
+  --rain-strength: 0.55;
   /* GitHub contribution levels 0-4. */
   --contrib-0: color-mix(in oklab, var(--color-brand-600) 9%, var(--color-bg));
   --contrib-1: var(--color-brand-200);
@@ -81,6 +85,9 @@
   --color-accent: #e6a573;
   --color-lift: rgb(0 0 0 / 0.45);
   --glow: 14%;
+  --rain-rim: 190, 205, 222;
+  --rain-shine: 255, 228, 196;
+  --rain-strength: 0.4;
   --contrib-0: color-mix(in oklab, var(--color-brand-300) 10%, var(--color-bg));
   --contrib-1: var(--color-brand-800);
   --contrib-2: var(--color-brand-600);
@@ -107,6 +114,9 @@
     --color-accent: #e6a573;
     --color-lift: rgb(0 0 0 / 0.45);
     --glow: 14%;
+    --rain-rim: 190, 205, 222;
+    --rain-shine: 255, 228, 196;
+    --rain-strength: 0.4;
     --contrib-0: color-mix(in oklab, var(--color-brand-300) 10%, var(--color-bg));
     --contrib-1: var(--color-brand-800);
     --contrib-2: var(--color-brand-600);

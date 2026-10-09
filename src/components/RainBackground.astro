@@ -1,0 +1,220 @@
+---
+// Background rain on a window pane: small beads of water appear and fade on the glass, and now and
+// then a heavier drop slides down in fits and starts, swallowing the beads in its way and leaving a
+// trail of droplets. Kept faint and cheap: every drop is one pre-rendered sprite, ~30 fps, no frames
+// while the tab is hidden, and a still pane with reduced motion. Colors from --rain-* in global.css.
+---
+
+<canvas data-rain aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 size-full"></canvas>
+
+<script>
+  const FPS = 30;
+  const BEAD_AREA = 11000; // px² of screen per bead
+  const BEAD_SPAWN = 220; // ms between new beads while below that count
+  const BEAD_LIFE = [18_000, 45_000]; // ms
+  const FADE_IN = 900; // ms
+  const FADE_OUT = 2500; // ms
+  const SLIDE_EVERY = [3000, 8000]; // ms between sliding drops
+  const MAX_SLIDERS = 3;
+  const MAX_RADIUS = 10; // px, a sliding drop stops growing here
+  const TRAIL_GAP = [8, 20]; // px between the droplets a sliding drop leaves behind
+  const SPRITE = 64; // px
+
+  interface Bead {
+    x: number;
+    y: number;
+    r: number;
+    born: number;
+    life: number;
+  }
+
+  interface Slider {
+    x: number;
+    y: number;
+    r: number;
+    speed: number; // px/s
+    target: number; // speed it is easing toward: drops on glass stall and lurch
+    drift: number; // px/s sideways
+    nextTrail: number; // y of the next trail droplet
+  }
+
+  const rand = (min: number, max: number) => min + Math.random() * (max - min);
+
+  function init(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+    const root = document.documentElement;
+    const motion = matchMedia("(prefers-reduced-motion: reduce)");
+    const darkScheme = matchMedia("(prefers-color-scheme: dark)");
+    const sprite = document.createElement("canvas");
+    sprite.width = sprite.height = SPRITE;
+    let width = 0;
+    let height = 0;
+    let strength = 0.5;
+    let beads: Bead[] = [];
+    let sliders: Slider[] = [];
+    let clock = 0; // ms of simulated time: it stops while the tab is hidden
+    let last = 0;
+    let lastBead = 0;
+    let nextSlide = rand(1000, 3000);
+    let frame = 0;
+
+    /** One drop, drawn once: clear in the middle, darker toward the rim, a bright spot up-left. */
+    function paintSprite() {
+      const style = getComputedStyle(root);
+      const rim = style.getPropertyValue("--rain-rim").trim();
+      const shine = style.getPropertyValue("--rain-shine").trim();
+      strength = parseFloat(style.getPropertyValue("--rain-strength")) || 0.5;
+      const g = sprite.getContext("2d")!;
+      const c = SPRITE / 2;
+      g.clearRect(0, 0, SPRITE, SPRITE);
+      const body = g.createRadialGradient(c, c * 1.15, c * 0.1, c, c, c);
+      body.addColorStop(0, `rgba(${rim}, 0.04)`);
+      body.addColorStop(0.65, `rgba(${rim}, 0.12)`);
+      body.addColorStop(0.9, `rgba(${rim}, 0.45)`);
+      body.addColorStop(1, `rgba(${rim}, 0)`);
+      g.fillStyle = body;
+      g.beginPath();
+      g.arc(c, c, c, 0, Math.PI * 2);
+      g.fill();
+      // Light passing through the drop gathers at its bottom.
+      const low = g.createRadialGradient(c, c * 1.5, 0, c, c * 1.5, c * 0.5);
+      low.addColorStop(0, `rgba(${shine}, 0.35)`);
+      low.addColorStop(1, `rgba(${shine}, 0)`);
+      g.fillStyle = low;
+      g.beginPath();
+      g.arc(c, c, c * 0.95, 0, Math.PI * 2);
+      g.fill();
+      const spot = g.createRadialGradient(c * 0.7, c * 0.62, 0, c * 0.7, c * 0.62, c * 0.32);
+      spot.addColorStop(0, `rgba(${shine}, 0.9)`);
+      spot.addColorStop(1, `rgba(${shine}, 0)`);
+      g.fillStyle = spot;
+      g.fillRect(0, 0, SPRITE, SPRITE);
+    }
+
+    const targetBeads = () => Math.round((width * height) / BEAD_AREA);
+    const beadRadius = () => 1.6 + Math.random() ** 2.5 * 5; // mostly small beads, a few fat ones
+
+    function newBead(born: number): Bead {
+      return { x: rand(0, width), y: rand(0, height), r: beadRadius(), born, life: rand(BEAD_LIFE[0], BEAD_LIFE[1]) };
+    }
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      beads = beads.filter((b) => b.x < width && b.y < height);
+    }
+
+    function drawDrop(x: number, y: number, r: number, alpha: number, stretch = 1) {
+      ctx.globalAlpha = alpha * strength;
+      ctx.drawImage(sprite, x - r, y - r * stretch, r * 2, r * 2 * stretch);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, width, height);
+      for (const b of beads) {
+        const age = clock - b.born;
+        const alpha = Math.min(1, age / FADE_IN, (b.life - age) / FADE_OUT);
+        if (alpha > 0) drawDrop(b.x, b.y, b.r, alpha);
+      }
+      // A sliding drop is pulled into a teardrop by its weight.
+      for (const s of sliders) drawDrop(s.x, s.y, s.r, 1, 1.25);
+      ctx.globalAlpha = 1;
+    }
+
+    function update(dt: number) {
+      beads = beads.filter((b) => clock - b.born < b.life);
+      if (clock - lastBead > BEAD_SPAWN && beads.length < targetBeads()) {
+        beads.push(newBead(clock));
+        lastBead = clock;
+      }
+
+      if (clock > nextSlide) {
+        nextSlide = clock + rand(SLIDE_EVERY[0], SLIDE_EVERY[1]);
+        if (sliders.length < MAX_SLIDERS) {
+          const y = rand(-20, height * 0.45);
+          sliders.push({ x: rand(0, width), y, r: rand(5, 7.5), speed: 0, target: rand(40, 120), drift: 0, nextTrail: y });
+        }
+      }
+
+      for (const s of sliders) {
+        if (Math.random() < dt * 0.9) s.target = Math.random() < 0.25 ? rand(4, 15) : rand(50, 200) * (s.r / 5);
+        if (Math.random() < dt * 1.5) s.drift = rand(-12, 12);
+        s.speed += (s.target - s.speed) * Math.min(1, dt * 3);
+        s.y += s.speed * dt;
+        s.x += s.drift * dt;
+        if (s.y > s.nextTrail) {
+          s.nextTrail = s.y + rand(TRAIL_GAP[0], TRAIL_GAP[1]);
+          beads.push({ x: s.x + rand(-1, 1), y: s.y - s.r, r: rand(0.9, 1.6) * (s.r / 6), born: clock - FADE_IN, life: rand(2500, 6000) });
+        }
+        // Swallow the beads it runs into (not its own trail, which is behind it), and grow heavier.
+        beads = beads.filter((b) => {
+          const hit = b.y > s.y && Math.abs(b.x - s.x) < s.r + b.r * 0.5 && b.y - s.y < s.r * 1.25 + b.r;
+          if (hit) s.r = Math.min(MAX_RADIUS, Math.hypot(s.r, b.r * 0.6));
+          return !hit;
+        });
+      }
+      sliders = sliders.filter((s) => s.y - s.r * 2 < height);
+    }
+
+    function tick(now: number) {
+      frame = requestAnimationFrame(tick);
+      if (now - last < 1000 / FPS - 2) return;
+      const dt = Math.min(0.1, (now - last) / 1000); // no big jump after the tab was hidden
+      last = now;
+      clock += dt * 1000;
+      update(dt);
+      draw();
+    }
+
+    /** A still pane: the same beads, all fully there, no sliding drops. */
+    function still() {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      sliders = [];
+      if (beads.length < targetBeads()) beads.push(...Array.from({ length: targetBeads() - beads.length }, () => newBead(-FADE_IN)));
+      for (const b of beads) {
+        b.born = clock - FADE_IN;
+        b.life = Infinity;
+      }
+      draw();
+    }
+
+    function start() {
+      if (motion.matches) return still();
+      // Begin with a pane already partly misted over, its beads appearing over the first seconds.
+      for (const b of beads) if (b.life === Infinity) b.life = clock - b.born + rand(FADE_OUT, BEAD_LIFE[1]);
+      if (!beads.length) beads = Array.from({ length: Math.round(targetBeads() * 0.6) }, () => newBead(clock - rand(-4000, BEAD_LIFE[0] / 2)));
+      if (!frame) {
+        last = performance.now();
+        frame = requestAnimationFrame(tick);
+      }
+    }
+
+    const repaint = () => {
+      paintSprite();
+      if (motion.matches) draw();
+    };
+    new MutationObserver(repaint).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+    darkScheme.addEventListener("change", repaint);
+    motion.addEventListener("change", start);
+    let resizeTimer = 0;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        resize();
+        if (motion.matches) still();
+      }, 150);
+    });
+
+    resize();
+    paintSprite();
+    start();
+  }
+
+  const canvas = document.querySelector<HTMLCanvasElement>("[data-rain]");
+  const ctx = canvas?.getContext("2d");
+  if (canvas && ctx) init(canvas, ctx);
+</script>
