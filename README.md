@@ -21,7 +21,7 @@ The site is bilingual: French at `/`, English at `/en/`. Most text is written as
 
 - **Name, tagline, links, CV paths:** `src/site.config.ts`
 - **Bio:** `src/content/about/fr.md` and `en.md`
-- **Projects:** one Markdown file per project in `src/content/projects/` (schema in `src/content.config.ts`)
+- **Projects:** one folder per project in `src/content/projects/`, with its images and an optional write-up that gets its own page (how-to in `src/content/projects/README.md`, schema in `src/content.config.ts`)
 - **Experience and education:** `src/data/journey.ts`
 - **Skills and spoken languages:** `src/data/skills.ts`
 - **Interface labels:** `src/i18n/ui.ts`

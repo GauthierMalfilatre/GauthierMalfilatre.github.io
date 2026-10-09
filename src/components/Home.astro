@@ -1,41 +1,25 @@
 ---
-import Base from "../layouts/Base.astro";
+import Columns from "../layouts/Columns.astro";
 import About from "./About.astro";
 import Contact from "./Contact.astro";
 import Games from "./Games.astro";
 import Journey from "./Journey.astro";
 import Projects from "./Projects.astro";
-import Sidebar from "./Sidebar.astro";
 import Skills from "./Skills.astro";
-import { site } from "../site.config";
-import { useTranslations, type Lang } from "../i18n/ui";
+import type { Lang } from "../i18n/ui";
 
 interface Props {
   lang: Lang;
 }
 
 const { lang } = Astro.props;
-const t = useTranslations(lang);
 ---
 
-<Base lang={lang}>
-  <!-- Two columns from lg up: the sidebar stays put while the sections scroll. One column below. -->
-  <div class="mx-auto max-w-7xl px-4 md:px-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] lg:gap-16 lg:px-12">
-    <Sidebar lang={lang} />
-    <div class="@container lg:py-14">
-      <main>
-        <About lang={lang} />
-        <Projects lang={lang} />
-        <Journey lang={lang} />
-        <Skills lang={lang} />
-        <Games lang={lang} />
-        <Contact lang={lang} />
-      </main>
-      <footer>
-        <p class="border-t border-line py-8 text-sm text-muted lg:pb-0">
-          © {new Date().getFullYear()} {site.name}. {t("footer.built")}
-        </p>
-      </footer>
-    </div>
-  </div>
-</Base>
+<Columns lang={lang} home>
+  <About lang={lang} />
+  <Contact lang={lang} />
+  <Projects lang={lang} />
+  <Journey lang={lang} />
+  <Skills lang={lang} />
+  <Games lang={lang} />
+</Columns>

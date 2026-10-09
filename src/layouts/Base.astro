@@ -1,5 +1,5 @@
 ---
-import { getAbsoluteLocaleUrl } from "astro:i18n";
+import { getRelativeLocaleUrl } from "astro:i18n";
 import "@fontsource-variable/fraunces/soft.css";
 import "@fontsource-variable/fraunces/soft-italic.css";
 import "@fontsource-variable/nunito";
@@ -11,15 +11,15 @@ interface Props {
   lang: Lang;
   title?: string;
   description?: string;
-  /** Emit hreflang links to the other language's home page. */
-  alternates?: boolean;
+  /** This page's path in each language, for hreflang links. Defaults to the home pages; false for none. */
+  alternates?: Record<Lang, string> | false;
 }
 
 const {
   lang,
   title = `${site.name} | ${l(site.role, lang)}`,
   description = l(site.tagline, lang),
-  alternates = true,
+  alternates = { fr: getRelativeLocaleUrl("fr"), en: getRelativeLocaleUrl("en") },
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
@@ -44,11 +44,11 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <link rel="canonical" href={canonical} />
     {
       alternates &&
-        Object.keys(languages).map((code) => (
-          <link rel="alternate" hreflang={code} href={getAbsoluteLocaleUrl(code)} />
+        (Object.keys(languages) as Lang[]).map((code) => (
+          <link rel="alternate" hreflang={code} href={new URL(alternates[code], Astro.site)} />
         ))
     }
-    {alternates && <link rel="alternate" hreflang="x-default" href={getAbsoluteLocaleUrl("fr")} />}
+    {alternates && <link rel="alternate" hreflang="x-default" href={new URL(alternates.fr, Astro.site)} />}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content={lang === "fr" ? "fr_FR" : "en_US"} />

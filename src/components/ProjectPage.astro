@@ -1,0 +1,145 @@
+---
+// A project's own page: cover, write-up (Markdown body of its index.md, or en.md in English) and
+// gallery, then a link to the next project that has a page. Routes in src/pages/projets/ and
+// src/pages/en/projects/.
+import { Image } from "astro:assets";
+import { getCollection, render } from "astro:content";
+import { getRelativeLocaleUrl } from "astro:i18n";
+import Columns from "../layouts/Columns.astro";
+import Icon from "./Icon.astro";
+import { getPageIds, getProjects, projectUrl } from "../lib/projects";
+import { site } from "../site.config";
+import { l, useTranslations, type Lang } from "../i18n/ui";
+
+interface Props {
+  lang: Lang;
+  id: string;
+}
+
+const { lang, id } = Astro.props;
+const t = useTranslations(lang);
+const projects = await getProjects();
+const pageIds = await getPageIds();
+const project = projects.find((p) => p.id === id)!;
+const { data } = project;
+
+// The English page shows en.md when there is one, the French write-up otherwise (marked as such).
+const texts = await getCollection("projectTexts", (text) => text.id.startsWith(`${id}/`));
+const french = texts.find((text) => text.id === `${id}/fr`);
+const english = lang === "en" ? texts.find((text) => text.id === `${id}/en`) : undefined;
+const source = english?.body?.trim() ? english : french;
+const hasText = Boolean(source?.body?.trim());
+const { Content } = source ? await render(source) : { Content: null };
+const inFrench = lang === "en" && source === french && hasText;
+
+const withPages = projects.filter((p) => pageIds.has(p.id));
+const next = withPages.length > 1 ? withPages[(withPages.indexOf(project) + 1) % withPages.length] : null;
+const meta = [
+  t(data.context === "personal" ? "projects.personal" : "projects.school"),
+  data.team === 1 ? t("projects.solo") : t("projects.team").replace("{n}", String(data.team)),
+];
+---
+
+<Columns
+  lang={lang}
+  title={`${data.title} | ${site.name}`}
+  description={l(data.description, lang)}
+  alternates={{ fr: projectUrl(id, "fr"), en: projectUrl(id, "en") }}
+  current="#projects"
+>
+  <article class="pb-16 lg:pb-20">
+    <a
+      href={`${getRelativeLocaleUrl(lang)}#projects`}
+      class="reveal inline-flex items-center gap-1.5 text-sm font-semibold text-muted transition-colors hover:text-accent"
+    >
+      <Icon name="arrow-left" class="size-4" />
+      {t("projects.back")}
+    </a>
+
+    <p class="reveal mt-8 text-sm font-semibold text-accent" style="--i: 1">{meta.join(" · ")}</p>
+    <h1 class="reveal mt-2 text-5xl leading-[1.05] font-medium tracking-tight md:text-6xl" style="--i: 1">
+      {data.title}
+    </h1>
+    <p class="reveal mt-5 max-w-[60ch] text-xl leading-relaxed text-muted" style="--i: 2">
+      {l(data.description, lang)}
+    </p>
+    <div class="reveal mt-6 flex flex-wrap items-center gap-x-5 gap-y-3" style="--i: 3">
+      {
+        data.links.map((link) => (
+          <a href={link.url} class="btn-secondary">
+            {link.label ? l(link.label, lang) : t("projects.link")}
+            <Icon name="arrow-up-right" class="size-3.5" />
+          </a>
+        ))
+      }
+      <ul class="flex flex-wrap gap-1.5">
+        {data.tags.map((tag) => <li class="chip">{tag}</li>)}
+      </ul>
+    </div>
+
+    {
+      data.cover && (
+        <Image
+          src={data.cover}
+          alt={data.title}
+          widths={[672, 1344]}
+          sizes="(min-width: 1024px) 672px, 100vw"
+          class="reveal mt-10 w-full rounded-2xl ring-1 ring-line"
+          style="--i: 4"
+        />
+      )
+    }
+
+    {
+      hasText && Content && (
+        <div class="mt-10">
+          {inFrench && <p class="mb-6 text-sm text-muted italic">{t("projects.frenchOnly")}</p>}
+          <div class="prose-cozy" lang={inFrench ? "fr" : undefined}>
+            <Content />
+          </div>
+        </div>
+      )
+    }
+
+    {
+      data.gallery.length > 0 && (
+        <section class="mt-14">
+          <h2 class="text-3xl font-medium tracking-tight">{t("projects.gallery")}</h2>
+          <ul class="mt-6 grid gap-x-6 gap-y-8 @xl:grid-cols-2">
+            {data.gallery.map((item) => {
+              const caption = item.caption ? l(item.caption, lang) : "";
+              return (
+                <li>
+                  <figure>
+                    <a href={item.src.src} class="group block overflow-hidden rounded-2xl ring-1 ring-line">
+                      <Image
+                        src={item.src}
+                        alt={caption}
+                        widths={[336, 672]}
+                        sizes="(min-width: 640px) 336px, 100vw"
+                        class="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none"
+                      />
+                    </a>
+                    {caption && <figcaption class="mt-2.5 text-sm leading-relaxed text-muted">{caption}</figcaption>}
+                  </figure>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )
+    }
+
+    {
+      next && (
+        <a href={projectUrl(next.id, lang)} class="group mt-16 block border-t border-line pt-8">
+          <span class="text-sm font-semibold text-muted">{t("projects.next")}</span>
+          <span class="font-soft mt-1 flex items-center gap-2 text-3xl font-medium tracking-tight transition-colors group-hover:text-accent">
+            {next.data.title}
+            <Icon name="arrow-right" class="size-6 transition-transform group-hover:translate-x-1 motion-reduce:transition-none" />
+          </span>
+        </a>
+      )
+    }
+  </article>
+</Columns>

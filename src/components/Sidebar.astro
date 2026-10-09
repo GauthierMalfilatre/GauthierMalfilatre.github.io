@@ -1,7 +1,8 @@
 ---
 // The left column: who, what, how to reach me. Sticky and full height from lg up (it scrolls on its
 // own if the screen is too short), a plain intro block above the sections on smaller screens.
-// The nav marks the section being read with aria-current (script below).
+// On the home page the nav marks the section being read with aria-current (script below); on other
+// pages its links lead back to the home page and `current` marks one of them.
 import { getRelativeLocaleUrl } from "astro:i18n";
 import Icon from "./Icon.astro";
 import RaisedTile from "./RaisedTile.astro";
@@ -10,20 +11,29 @@ import { l, useTranslations, type Lang } from "../i18n/ui";
 
 interface Props {
   lang: Lang;
+  /** On the home page: the name is the page's h1 and nav links are same-page anchors. */
+  home?: boolean;
+  /** This page in the other language (defaults to its home page). */
+  otherUrl?: string;
+  /** The nav link to mark as current outside the home page, e.g. "#projects". */
+  current?: string;
 }
 
-const { lang } = Astro.props;
+const { lang, home = false, current } = Astro.props;
 const t = useTranslations(lang);
 const other: Lang = lang === "fr" ? "en" : "fr";
+const { otherUrl = getRelativeLocaleUrl(other) } = Astro.props;
+const base = home ? "" : getRelativeLocaleUrl(lang);
+const Name = home ? "h1" : "p";
 const cv = site.cv[lang] || site.cv.fr;
 const cvIsFallback = !site.cv[lang];
 const links = [
   ["#about", t("nav.about")],
+  ["#contact", t("nav.contact")],
   ["#projects", t("nav.projects")],
   ["#journey", t("nav.journey")],
   ["#skills", t("nav.skills")],
   ["#games", t("games.title")],
-  ["#contact", t("nav.contact")],
 ];
 const socials = [
   { href: site.github, label: "GitHub", icon: "github-logo" },
@@ -56,7 +66,7 @@ const toolButton = "rounded-full p-2 text-muted transition-colors hover:bg-brand
       }
       <span aria-hidden="true" class="mx-1 h-5 w-px bg-line"></span>
       <a
-        href={getRelativeLocaleUrl(other)}
+        href={otherUrl}
         hreflang={other}
         lang={other}
         aria-label={t("lang.switch")}
@@ -72,9 +82,9 @@ const toolButton = "rounded-full p-2 text-muted transition-colors hover:bg-brand
     </div>
   </div>
 
-  <h1 class="reveal mt-7 text-5xl leading-[1.05] font-medium tracking-tight" style="--i: 1">
+  <Name class="font-soft reveal mt-7 text-5xl leading-[1.05] font-medium tracking-tight" style="--i: 1">
     <a href={getRelativeLocaleUrl(lang)}>{site.name}</a>
-  </h1>
+  </Name>
   <p class="reveal mt-4 max-w-[42ch] text-lg leading-relaxed text-muted" style="--i: 2">
     {l(site.tagline, lang)}
   </p>
@@ -94,7 +104,7 @@ const toolButton = "rounded-full p-2 text-muted transition-colors hover:bg-brand
       <Icon name="download-simple" />
       {t(cvIsFallback ? "cta.cvFallback" : "cta.cv")}
     </a>
-    <a href="#contact" class="btn-secondary">{t("cta.contact")}</a>
+    <a href={`${base}#contact`} class="btn-secondary">{t("cta.contact")}</a>
   </div>
 
   <!-- Section nav, desktop only: on smaller screens the sections simply follow. -->
@@ -104,8 +114,9 @@ const toolButton = "rounded-full p-2 text-muted transition-colors hover:bg-brand
         links.map(([href, label]) => (
           <li>
             <a
-              href={href}
-              data-nav-link
+              href={`${base}${href}`}
+              data-nav-link={home ? "" : undefined}
+              aria-current={!home && href === current ? "true" : undefined}
               class="group flex w-fit items-center gap-4 py-1.5 text-sm font-semibold text-muted transition-colors hover:text-fg aria-[current=true]:text-accent"
             >
               <span

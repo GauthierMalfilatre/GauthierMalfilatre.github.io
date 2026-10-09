@@ -1,0 +1,10 @@
+---
+import ProjectPage from "../../../components/ProjectPage.astro";
+import { getPageIds } from "../../../lib/projects";
+
+export async function getStaticPaths() {
+  return [...(await getPageIds())].map((slug) => ({ params: { slug } }));
+}
+---
+
+<ProjectPage lang="en" id={Astro.params.slug} />

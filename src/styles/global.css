@@ -59,6 +59,15 @@
   --contrib-2: var(--color-brand-400);
   --contrib-3: var(--color-brand-600);
   --contrib-4: var(--color-brand-800);
+  /* Project tiles without a cover (ProjectThumb.astro): chai, matcha, rain, honey. */
+  --tile-1: #ecd3bf;
+  --tile-1-ink: #7d3c1e;
+  --tile-2: #d6dcc9;
+  --tile-2-ink: #4a5b3d;
+  --tile-3: #d2d9e1;
+  --tile-3-ink: #3e5468;
+  --tile-4: #eedfb8;
+  --tile-4-ink: #6e5520;
 }
 
 /* Dark tokens, applied in both dark cases (pinned, or following the OS). Keep the two blocks in sync. */
@@ -77,6 +86,14 @@
   --contrib-2: var(--color-brand-600);
   --contrib-3: var(--color-brand-400);
   --contrib-4: var(--color-brand-200);
+  --tile-1: #3d2a20;
+  --tile-1-ink: #e6a573;
+  --tile-2: #2e3529;
+  --tile-2-ink: #b5c4a3;
+  --tile-3: #29313a;
+  --tile-3-ink: #a9bccd;
+  --tile-4: #3b3322;
+  --tile-4-ink: #e3c98a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -95,6 +112,14 @@
     --contrib-2: var(--color-brand-600);
     --contrib-3: var(--color-brand-400);
     --contrib-4: var(--color-brand-200);
+    --tile-1: #3d2a20;
+    --tile-1-ink: #e6a573;
+    --tile-2: #2e3529;
+    --tile-2-ink: #b5c4a3;
+    --tile-3: #29313a;
+    --tile-3-ink: #a9bccd;
+    --tile-4: #3b3322;
+    --tile-4-ink: #e3c98a;
   }
 }
 
@@ -119,6 +144,12 @@
     outline-offset: 3px;
     border-radius: 6px;
   }
+}
+
+/* Fraunces at its softest, for display text that is not an h1-h3. */
+@utility font-soft {
+  font-family: var(--font-serif);
+  font-variation-settings: "SOFT" 100;
 }
 
 /* Warm lamp light in the top-left corner. */
@@ -168,6 +199,97 @@
     :where(.group):focus-visible & {
       translate: none;
     }
+  }
+}
+
+/* Long-form Markdown, such as a project's write-up (ProjectPage.astro). */
+.prose-cozy {
+  max-width: 65ch;
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--color-muted);
+  & > * + * {
+    margin-top: 1.1em;
+  }
+  & h2,
+  & h3 {
+    color: var(--color-fg);
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  & h2 {
+    margin-top: 2em;
+    font-size: 1.875rem;
+  }
+  & h3 {
+    margin-top: 1.6em;
+    font-size: 1.375rem;
+  }
+  & strong {
+    color: var(--color-fg);
+    font-weight: 700;
+  }
+  & a {
+    @apply link text-fg;
+  }
+  & ul {
+    list-style: disc;
+    padding-left: 1.25em;
+  }
+  & ol {
+    list-style: decimal;
+    padding-left: 1.25em;
+  }
+  & li + li {
+    margin-top: 0.35em;
+  }
+  & li::marker {
+    color: var(--color-brand-400);
+  }
+  & blockquote {
+    border-left: 3px solid var(--color-brand-300);
+    padding-left: 1em;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.15em;
+    color: var(--color-fg);
+  }
+  & img {
+    border-radius: 1rem;
+    box-shadow: 0 0 0 1px var(--color-line);
+  }
+  & :not(pre) > code {
+    font-size: 0.875em;
+    padding: 0.1em 0.4em;
+    border-radius: 0.4em;
+    background: var(--color-surface);
+    color: var(--color-fg);
+  }
+  & pre {
+    padding: 1em 1.25em;
+    border-radius: 1rem;
+    overflow-x: auto;
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+  & hr {
+    border-color: var(--color-line);
+    margin-block: 2.5em;
+  }
+}
+
+/* Code blocks: Shiki writes the light colors inline and the dark ones as --shiki-dark vars (astro.config.mjs). */
+:root[data-theme="dark"] .astro-code,
+:root[data-theme="dark"] .astro-code span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .astro-code,
+  :root:not([data-theme="light"]) .astro-code span {
+    color: var(--shiki-dark) !important;
+    background-color: var(--shiki-dark-bg) !important;
   }
 }
 

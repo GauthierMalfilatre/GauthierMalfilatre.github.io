@@ -17,6 +17,10 @@ export default defineConfig({
       STEAM_API_KEY: envField.string({ context: "server", access: "secret", optional: true }),
     },
   },
+  markdown: {
+    // Cozy code colors in both themes; global.css switches to the dark ones.
+    shikiConfig: { themes: { light: "rose-pine-dawn", dark: "rose-pine-moon" } },
+  },
   vite: {
     plugins: [tailwindcss()],
   },
