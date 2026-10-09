@@ -14,14 +14,14 @@ const projects = defineCollection({
     z.object({
       title: z.string(),
       description: localized,
-      context: z.enum(["personal", "school"]),
+      context: z.enum(["personal", "school", "grdf"]),
       team: z.number().int().min(1).default(1),
       tags: z.array(z.string()).default([]),
       links: z.array(z.object({ url: z.url(), label: localized.optional() })).default([]),
       // Shown on the card and at the top of the project page.
       cover: image().optional(),
       gallery: z.array(z.object({ src: image(), caption: localized.optional() })).default([]),
-      // Lower comes first.
+      // Position within its context (personal or school): lower comes first.
       order: z.number().default(100),
     }),
 });

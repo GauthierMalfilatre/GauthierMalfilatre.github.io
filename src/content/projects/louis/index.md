@@ -11,5 +11,5 @@ links:
     label:
       fr: Dépôt de test
       en: Test repo
-order: 5
+order: 1
 ---

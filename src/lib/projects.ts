@@ -3,8 +3,14 @@ import type { Lang } from "../i18n/ui";
 
 export type Project = CollectionEntry<"projects">;
 
+/** The groups of the projects list, in display order. */
+export const CONTEXTS = ["personal", "school", "grdf"] as const;
+
+/** Group by group, then by `order`, which counts from 1 within each group. */
 export const getProjects = async (): Promise<Project[]> =>
-  (await getCollection("projects")).sort((a, b) => a.data.order - b.data.order);
+  (await getCollection("projects")).sort(
+    (a, b) => CONTEXTS.indexOf(a.data.context) - CONTEXTS.indexOf(b.data.context) || a.data.order - b.data.order,
+  );
 
 /** Projects that get their own page: those with a write-up (French or English) or a gallery. */
 export async function getPageIds(): Promise<Set<string>> {

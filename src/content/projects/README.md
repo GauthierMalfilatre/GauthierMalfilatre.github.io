@@ -18,7 +18,7 @@ title: Zappy
 description:
   fr: Simulation d’un monde virtuel en trois parties.
   en: Simulation of a virtual world in three parts.
-context: school          # school ou personal (le groupe dans la liste)
+context: school          # personal, school ou grdf (le groupe dans la liste)
 team: 6                  # 1 = Solo
 tags: [C, C++, Python]
 links:
@@ -31,7 +31,7 @@ gallery:                 # images en bas de la page, avec une légende facultati
     caption: { fr: Le serveur en action, en: The server at work }
   - src: ./ia.png
     caption: Même légende dans les deux langues
-order: 4                 # plus petit = plus haut dans la liste
+order: 2                 # place dans son groupe : 1 = en premier (le seul visible avant de déplier)
 ---
 
 Tout ce qui est écrit ici, sous les `---`, est le texte de la page (en Markdown).

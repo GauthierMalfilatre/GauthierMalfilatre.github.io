@@ -212,6 +212,26 @@
   }
 }
 
+/*
+ * Folded content (<details class="fold">, Projects.astro) slides open where ::details-content and
+ * height: auto transitions are supported; elsewhere it just opens.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .fold {
+    interpolate-size: allow-keywords;
+  }
+  .fold::details-content {
+    block-size: 0;
+    overflow-y: clip;
+    transition:
+      block-size 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+      content-visibility 0.45s allow-discrete;
+  }
+  .fold[open]::details-content {
+    block-size: auto;
+  }
+}
+
 /* Long-form Markdown, such as a project's write-up (ProjectPage.astro). */
 .prose-cozy {
   max-width: 65ch;

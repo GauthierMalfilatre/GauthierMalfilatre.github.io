@@ -35,7 +35,7 @@ const inFrench = lang === "en" && source === french && hasText;
 const withPages = projects.filter((p) => pageIds.has(p.id));
 const next = withPages.length > 1 ? withPages[(withPages.indexOf(project) + 1) % withPages.length] : null;
 const meta = [
-  t(data.context === "personal" ? "projects.personal" : "projects.school"),
+  t(({ personal: "projects.personal", school: "projects.school", grdf: "projects.grdf" } as const)[data.context]),
   data.team === 1 ? t("projects.solo") : t("projects.team").replace("{n}", String(data.team)),
 ];
 ---

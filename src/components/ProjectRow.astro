@@ -1,0 +1,68 @@
+---
+// One project in the projects list (Projects.astro), as an <li>. With a page of its own, the whole
+// row links to it.
+import Icon from "./Icon.astro";
+import ProjectThumb from "./ProjectThumb.astro";
+import type { Project } from "../lib/projects";
+import { l, useTranslations, type Lang } from "../i18n/ui";
+
+interface Props {
+  project: Project;
+  lang: Lang;
+  /** The project's page, if it has one. */
+  url: string | null;
+  /** Picks the thumbnail tone (see ProjectThumb.astro). */
+  index: number;
+}
+
+const { project, lang, url, index } = Astro.props;
+const { data } = project;
+const t = useTranslations(lang);
+---
+
+<li
+  class:list={[
+    "reveal-on-scroll group relative flex gap-4 rounded-2xl p-3 transition-colors @md:gap-5",
+    url && "hover:bg-surface/80",
+  ]}
+>
+  <ProjectThumb project={project} index={index} class="w-20 shrink-0 @md:w-32" />
+  <div class="min-w-0 flex-1">
+    <h4 class="font-soft text-xl leading-snug font-medium">
+      {
+        url ? (
+          // Stretched over the whole row; the row's other links sit above it (z-10).
+          <a href={url} class="inline-flex items-center gap-1.5 after:absolute after:inset-0 after:rounded-2xl">
+            {data.title}
+            <Icon
+              name="arrow-right"
+              class="size-4 text-accent transition-transform group-hover:translate-x-1 motion-reduce:transition-none"
+            />
+          </a>
+        ) : (
+          data.title
+        )
+      }
+    </h4>
+    <p class="text-sm text-muted">
+      {data.team === 1 ? t("projects.solo") : t("projects.team").replace("{n}", String(data.team))}
+    </p>
+    <p class="mt-2 max-w-[60ch] leading-relaxed text-muted">{l(data.description, lang)}</p>
+    <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+      <ul class="flex flex-wrap gap-1.5">
+        {data.tags.map((tag) => <li class="chip">{tag}</li>)}
+      </ul>
+      {
+        data.links.map((link) => (
+          <a
+            href={link.url}
+            class="relative z-10 inline-flex items-center gap-1 text-sm font-semibold transition-colors hover:text-accent"
+          >
+            {link.label ? l(link.label, lang) : t("projects.link")}
+            <Icon name="arrow-up-right" class="size-3.5" />
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</li>
