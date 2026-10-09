@@ -17,7 +17,7 @@ export const site = {
   steam: { profile: "https://steamcommunity.com/profiles/76561199639019411/" },
 
   // CV per language, served from public/cv/. An empty value falls back to the French CV.
-  cv: { fr: "/cv/gauthier-malfilatre-cv-fr.pdf", en: "" },
+  cv: { fr: "/cv/cv-gauthier.malfilatre-fr.pdf", en: "/cv/cv-gauthier.malfilatre-en.pdf" },
 
   availability: {
     fr: "Recherche un stage de 5 mois, printemps 2027",

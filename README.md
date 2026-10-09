@@ -25,7 +25,7 @@ The site is bilingual: French at `/`, English at `/en/`. Most text is written as
 - **Experience and education:** `src/data/journey.ts`
 - **Skills and spoken languages:** `src/data/skills.ts`
 - **Interface labels:** `src/i18n/ui.ts`
-- **CV files:** `public/cv/`. Set `cv.en` in `src/site.config.ts` once an English CV exists.
+- **CV files:** `public/cv/` (one PDF per language), paths in `cv` in `src/site.config.ts`. An empty path falls back to the French CV.
 - **Video games:** `src/data/games.ts`
 - **Colors and fonts:** tokens at the top of `src/styles/global.css`
 
