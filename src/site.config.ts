@@ -24,8 +24,8 @@ export const site = {
     en: "Looking for a 5-month internship, spring 2027",
   } as Localized,
   tagline: {
-    fr: "Étudiant en 3e année à Epitech Nancy, passionné par le bas niveau, l’embarqué et Python.",
-    en: "Third-year student at Epitech Nancy, into low-level programming, embedded systems and Python.",
+    fr: "Étudiant en 3e année à Epitech Nancy, passionné par le bas niveau et l’embarqué.",
+    en: "Third-year student at Epitech Nancy, into low-level programming and embedded systems",
   } as Localized,
   lookingFor: {
     fr: "Je cherche un stage de 5 mois à partir du printemps 2027, en développement bas niveau ou embarqué, idéalement en C, C++ ou Rust. Basé à Nancy, ouvert à Paris et au Luxembourg.",

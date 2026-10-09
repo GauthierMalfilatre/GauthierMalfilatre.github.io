@@ -8,5 +8,6 @@ team: 1
 tags: [C, CMake, TCP/UDP]
 links:
   - url: https://github.com/kronkorp/kronknet
+cover: ./cover.png
 order: 1
 ---

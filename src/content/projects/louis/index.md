@@ -11,5 +11,9 @@ links:
     label:
       fr: Dépôt de test
       en: Test repo
+cover: ./cover.png
+gallery:
+  - src: ./louis-ui.png
+    caption: { fr: L'interface web de Louis, en: The web interface }
 order: 1
 ---

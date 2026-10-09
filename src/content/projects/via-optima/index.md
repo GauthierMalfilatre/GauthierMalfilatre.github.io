@@ -5,6 +5,7 @@ description:
   en: "Optimization tool to connect biomethane plants to the existing gas network at the lowest cost. Won the Ki-Oz Innovation challenge."
 context: grdf
 team: 3
-tags: [Python]
+tags: [Python, QGIS]
 order: 1
+cover: ./image.png
 ---
