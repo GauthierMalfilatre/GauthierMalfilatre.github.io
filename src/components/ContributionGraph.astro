@@ -1,5 +1,5 @@
 ---
-// Mini GitHub contribution graph: the last 26 weeks, in the brand purple scale.
+// Mini GitHub contribution graph: the last 26 weeks, in the brand chai scale.
 // The grid is right-aligned and clipped, so narrow layouts show only the most recent weeks.
 import Icon from "./Icon.astro";
 import RaisedTile from "./RaisedTile.astro";
@@ -41,7 +41,7 @@ const summary = data ? t("github.total").replace("{n}", number.format(data.total
     <RaisedTile class={["min-w-0", className].filter(Boolean).join(" ")}>
       <a
         href={site.github}
-        class="group block rounded-xl bg-surface p-3 ring-1 ring-brand-600/40 transition hover:ring-brand-600/70"
+        class="group block rounded-2xl bg-surface p-3 ring-1 ring-line transition hover:ring-brand-600/40"
       >
         <p class="flex items-center gap-1.5 text-xs text-muted transition-colors group-hover:text-accent">
           <Icon name="github-logo" class="size-3.5 shrink-0" />
@@ -54,7 +54,7 @@ const summary = data ? t("github.total").replace("{n}", number.format(data.total
         >
           {days.map((day) => (
             <span
-              class="size-[10px]"
+              class="size-[10px] rounded-[3px]"
               style={`background: var(--contrib-${day.level})`}
               title={describe(day.count, day.date)}
             />

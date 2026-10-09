@@ -1,10 +1,9 @@
 ---
 import { getAbsoluteLocaleUrl } from "astro:i18n";
-import "@fontsource-variable/geist";
-import "@fontsource-variable/geist-mono";
+import "@fontsource-variable/fraunces/soft.css";
+import "@fontsource-variable/fraunces/soft-italic.css";
+import "@fontsource-variable/nunito";
 import "../styles/global.css";
-import LifeBackground from "../components/LifeBackground.astro";
-import StarField from "../components/StarField.astro";
 import { site } from "../site.config";
 import { l, languages, type Lang } from "../i18n/ui";
 
@@ -31,8 +30,8 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#f8f7f9" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#161616" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f7f2ea" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1b1d21" media="(prefers-color-scheme: dark)" />
     <script is:inline>
       // Apply the saved theme before first paint to avoid a flash.
       try {
@@ -59,8 +58,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:image" content={site.avatar} />
   </head>
   <body class="min-h-dvh bg-bg font-sans text-fg antialiased">
-    <StarField />
-    <LifeBackground />
+    <div aria-hidden="true" class="ambient-glow pointer-events-none fixed inset-0 -z-10"></div>
     <div aria-hidden="true" class="scroll-progress"></div>
     <slot />
   </body>

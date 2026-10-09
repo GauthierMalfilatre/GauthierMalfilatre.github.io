@@ -1,6 +1,5 @@
 ---
-// Section heading with the lifted-square marker and the decode effect.
-import DecodeText from "./DecodeText.astro";
+// Section heading with a small round marker.
 
 interface Props {
   title: string;
@@ -9,10 +8,7 @@ interface Props {
 const { title, class: className } = Astro.props;
 ---
 
-<h2
-  aria-label={title}
-  class:list={["flex items-center gap-3 text-2xl font-semibold tracking-tight md:text-3xl", className]}
->
-  <span aria-hidden="true" class="size-2.5 shrink-0 bg-brand-600 shadow-[3px_3px_0_var(--color-lift)]"></span>
-  <DecodeText text={title} />
+<h2 class:list={["flex items-center gap-3 text-3xl font-medium tracking-tight md:text-4xl", className]}>
+  <span aria-hidden="true" class="size-2 shrink-0 rounded-full bg-brand-400"></span>
+  {title}
 </h2>

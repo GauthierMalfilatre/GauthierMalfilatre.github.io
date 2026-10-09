@@ -31,17 +31,17 @@ const languages = await Promise.all(
   }),
 );
 
-const panel = "reveal-on-scroll rounded-xl p-6 ring-1 backdrop-blur-sm";
+const panel = "reveal-on-scroll rounded-2xl p-6 ring-1";
 ---
 
-<section id="skills" class="scroll-mt-20 border-t border-line py-20 md:py-28">
+<section id="skills" class="scroll-mt-8 border-t border-line py-16 md:py-20 lg:first:border-t-0 lg:first:pt-0">
   <SectionTitle title={t("nav.skills")} />
 
-  <div class="mt-10 grid gap-4 md:grid-cols-2">
+  <div class="mt-10 grid gap-4 @xl:grid-cols-2">
     {
       skillGroups.map((group, i) => (
-        <div class:list={[panel, i === 0 ? "bg-brand-600/12 ring-brand-600/35" : "bg-surface/70 ring-line"]}>
-          <h3 class="text-sm font-medium text-muted">{l(group.title, lang)}</h3>
+        <div class:list={[panel, i === 0 ? "bg-brand-600/8 ring-brand-600/20" : "bg-surface/70 ring-line"]}>
+          <h3 class="text-lg font-medium">{l(group.title, lang)}</h3>
           <ul class="mt-4 flex flex-wrap gap-2">
             {group.items.map((item) => (
               <li class="chip px-2.5 py-1 text-sm">{l(item, lang)}</li>
@@ -51,12 +51,12 @@ const panel = "reveal-on-scroll rounded-xl p-6 ring-1 backdrop-blur-sm";
       ))
     }
     <div class:list={[panel, "bg-surface/70 ring-line"]}>
-      <h3 class="text-sm font-medium text-muted">{languagesTitle}</h3>
+      <h3 class="text-lg font-medium">{languagesTitle}</h3>
       <dl class="mt-4 space-y-2">
         {
           languages.map((language) => (
             <div class="flex flex-wrap gap-x-3">
-              <dt class="font-medium">{l(language.name, lang)}</dt>
+              <dt class="font-semibold">{l(language.name, lang)}</dt>
               <dd class="text-muted">{l(language.level, lang)}</dd>
               {language.duolingo && (
                 <dd class="w-full text-sm text-muted">

@@ -13,14 +13,14 @@ const t = useTranslations(lang);
 const projects = (await getCollection("projects")).sort((a, b) => a.data.order - b.data.order);
 ---
 
-<section id="projects" class="scroll-mt-20 border-t border-line py-20 md:py-28">
+<section id="projects" class="scroll-mt-8 border-t border-line py-16 md:py-20 lg:first:border-t-0 lg:first:pt-0">
   <SectionTitle title={t("nav.projects")} />
 
-  <ul class="mt-10 grid gap-5 md:grid-cols-2">
+  <ul class="mt-10 grid gap-5 @xl:grid-cols-2">
     {
       projects.map(({ data }) => (
-        <li class="lift reveal-on-scroll flex flex-col rounded-xl bg-surface/70 p-6 ring-1 ring-line backdrop-blur-sm hover:ring-brand-600/50">
-          <h3 class="text-lg font-medium">{data.title}</h3>
+        <li class="lift reveal-on-scroll flex flex-col rounded-2xl bg-surface/70 p-6 ring-1 ring-line hover:ring-brand-600/30">
+          <h3 class="text-xl font-medium">{data.title}</h3>
           <p class="mt-1 text-sm text-muted">
             {t(data.context === "personal" ? "projects.personal" : "projects.school")} ·{" "}
             {data.team === 1 ? t("projects.solo") : t("projects.team").replace("{n}", String(data.team))}
@@ -37,7 +37,7 @@ const projects = (await getCollection("projects")).sort((a, b) => a.data.order -
                 {data.links.map((link) => (
                   <a
                     href={link.url}
-                    class="inline-flex items-center gap-1 font-medium transition-colors hover:text-accent"
+                    class="inline-flex items-center gap-1 font-semibold transition-colors hover:text-accent"
                   >
                     {link.label ? l(link.label, lang) : t("projects.link")}
                     <Icon name="arrow-up-right" class="size-3.5" />

@@ -16,24 +16,24 @@ const groups = [
 ];
 ---
 
-<section id="journey" class="scroll-mt-20 border-t border-line py-20 md:py-28">
+<section id="journey" class="scroll-mt-8 border-t border-line py-16 md:py-20 lg:first:border-t-0 lg:first:pt-0">
   <SectionTitle title={t("nav.journey")} />
 
-  <div class="mt-12 grid gap-14 lg:grid-cols-2 lg:gap-12">
+  <div class="mt-12 grid gap-14 @3xl:grid-cols-2 @3xl:gap-12">
     {
       groups.map((group) => (
         <div>
-          <h3 class="font-mono text-sm text-accent">{group.title}</h3>
-          <!-- Timeline: a purple rail with a square node per entry. -->
-          <ol class="mt-6 border-l border-brand-600/30">
+          <h3 class="text-xl font-medium text-accent italic">{group.title}</h3>
+          <!-- Timeline: a soft rail with a round node per entry. -->
+          <ol class="mt-6 border-l border-brand-600/20">
             {group.entries.map((entry) => (
               <li class="reveal-on-scroll relative pb-10 pl-7 last:pb-0">
                 <span
                   aria-hidden="true"
-                  class="absolute top-1 -left-[5.5px] size-2.5 bg-brand-600 shadow-[3px_3px_0_var(--color-lift)]"
+                  class="absolute top-1 -left-[5.5px] size-2.5 rounded-full bg-brand-400 ring-4 ring-bg"
                 />
                 <!-- Several periods: one per line on mobile, one line with separators from sm up. -->
-                <p class="flex flex-col font-mono text-xs text-accent sm:flex-row sm:flex-wrap sm:gap-x-2">
+                <p class="flex flex-col text-sm font-semibold text-accent sm:flex-row sm:flex-wrap sm:gap-x-2">
                   {entry.periods.map((period, i) => (
                     <span>
                       {i > 0 && <span class="hidden sm:inline">· </span>}
@@ -41,14 +41,14 @@ const groups = [
                     </span>
                   ))}
                 </p>
-                <h4 class="mt-1.5 font-medium">{l(entry.title, lang)}</h4>
+                <h4 class="mt-1.5 text-lg font-semibold">{l(entry.title, lang)}</h4>
                 <p class="text-sm text-muted">
                   {entry.org} · {entry.location}
-                  {entry.note && <span class="ml-2 font-mono text-xs">{l(entry.note, lang)}</span>}
+                  {entry.note && <span class="ml-2 text-xs">{l(entry.note, lang)}</span>}
                 </p>
                 <p class="mt-3 max-w-[65ch] leading-relaxed text-muted">{l(entry.summary, lang)}</p>
                 {entry.highlight && (
-                  <p class="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-600/10 px-2.5 py-1 text-sm font-medium text-accent ring-1 ring-brand-600/25">
+                  <p class="mt-3 inline-flex items-center gap-2 rounded-full bg-brand-600/8 px-3 py-1 text-sm font-semibold text-accent ring-1 ring-brand-600/20">
                     <Icon name="trophy" />
                     {l(entry.highlight, lang)}
                   </p>
