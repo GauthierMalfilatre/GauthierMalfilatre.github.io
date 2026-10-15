@@ -9,5 +9,4 @@ tags: [C++, CMake, ECS]
 links:
   - url: https://github.com/kronkorp/kronkworld
 order: 2
-cover: ./cover.png
 ---

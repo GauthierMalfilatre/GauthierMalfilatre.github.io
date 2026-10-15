@@ -7,5 +7,4 @@ context: personal
 team: 6
 tags: [Python, Pygame, Hackathon]
 order: 3
-cover: ./papaille.png
 ---

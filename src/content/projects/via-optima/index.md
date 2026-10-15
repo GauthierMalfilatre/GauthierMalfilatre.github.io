@@ -7,5 +7,4 @@ context: grdf
 team: 3
 tags: [Python, QGIS]
 order: 2
-cover: ./image.png
 ---
