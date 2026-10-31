@@ -7,10 +7,7 @@ context: school
 team: 4
 tags: [Python]
 links:
-  - url: https://github.com/louis-sensai/sandbox-pygame
-    label:
-      fr: Dépôt de test
-      en: Test repo
+  - url: https://github.com/GauthierMalfilatre/Louis
 gallery:
   - src: ./louis-ui.png
     caption: { fr: L'interface web de Louis, en: The web interface }
